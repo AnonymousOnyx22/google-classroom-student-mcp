@@ -1,0 +1,182 @@
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import http from "node:http";
+import type { AddressInfo } from "node:net";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { createClassroomApi } from "../src/classroom.js";
+import { createTokenProvider, buildAuthUrl, exchangeCode, SCOPES } from "../src/auth.js";
+import { createServer } from "../src/server.js";
+
+const day = 86400000;
+function dueParts(offsetDays: number, withTime = true) {
+  const d = new Date(Date.now() + offsetDays * day);
+  const out: any = { dueDate: { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() } };
+  if (withTime) out.dueTime = { hours: 23, minutes: 0 };
+  return out;
+}
+
+let srv: http.Server;
+let base = "";
+let refreshCalls = 0;
+const authHeaders: string[] = [];
+
+beforeAll(async () => {
+  srv = http.createServer((req, res) => {
+    const url = new URL(req.url!, "http://x");
+    const send = (code: number, data: unknown) => {
+      res.writeHead(code, { "content-type": "application/json" });
+      res.end(JSON.stringify(data));
+    };
+    if (url.pathname === "/token") {
+      let body = "";
+      req.on("data", (c) => (body += c));
+      req.on("end", () => {
+        const p = new URLSearchParams(body);
+        if (p.get("grant_type") === "refresh_token") {
+          refreshCalls++;
+          return p.get("refresh_token") === "rt-good"
+            ? send(200, { access_token: "at-fresh", expires_in: 3600 })
+            : send(400, { error: "invalid_grant", error_description: "Token has been expired or revoked." });
+        }
+        if (p.get("grant_type") === "authorization_code") {
+          return p.get("code") === "code-good"
+            ? send(200, { access_token: "at1", refresh_token: "rt-good" })
+            : send(200, { access_token: "at1" });
+        }
+        send(400, {});
+      });
+      return;
+    }
+    authHeaders.push(String(req.headers.authorization));
+    if (req.headers.authorization !== "Bearer at-fresh") return send(401, {});
+    const p = url.pathname;
+    if (p === "/v1/courses") {
+      if (url.searchParams.get("pageToken") === "p2") return send(200, { courses: [{ id: "300", name: "Biology" }] });
+      return send(200, { courses: [{ id: "100", name: "Math", section: "Period 1" }, { id: "200", name: "English" }], nextPageToken: "p2" });
+    }
+    if (p === "/v1/courses/100/courseWork")
+      return send(200, { courseWork: [
+        { id: "w1", title: "Worksheet 1", ...dueParts(-3), maxPoints: 10 },
+        { id: "w2", title: "Quiz 2", ...dueParts(2), maxPoints: 20 },
+        { id: "w3", title: "Project", ...dueParts(5, false), maxPoints: 50 },
+        { id: "w4", title: "Reading", maxPoints: 5 },
+      ] });
+    if (p === "/v1/courses/100/courseWork/-/studentSubmissions")
+      return send(200, { studentSubmissions: [
+        { courseWorkId: "w1", state: "NEW" },
+        { courseWorkId: "w2", state: "TURNED_IN" },
+        { courseWorkId: "w3", state: "CREATED" },
+        { courseWorkId: "w4", state: "RETURNED", assignedGrade: 4 },
+      ] });
+    if (p === "/v1/courses/200/courseWork") return send(200, { courseWork: [{ id: "e1", title: "Essay", ...dueParts(-10), maxPoints: 100 }] });
+    if (p === "/v1/courses/200/courseWork/-/studentSubmissions") return send(200, { studentSubmissions: [{ courseWorkId: "e1", state: "RETURNED", assignedGrade: 90 }] });
+    if (p === "/v1/courses/300/courseWork" || p === "/v1/courses/300/courseWork/-/studentSubmissions") return send(200, {});
+    if (p.endsWith("/announcements"))
+      return send(200, { announcements: p.includes("/100/") ? [{ text: "Test <b>Friday</b>", updateTime: "2026-10-12T10:00:00Z" }] : [] });
+    if (p === "/v1/courses/100/courseWorkMaterials") return send(200, { courseWorkMaterial: [{ title: "Slides week 3", description: "Chapter 3" }] });
+    send(404, {});
+  });
+  await new Promise<void>((r) => srv.listen(0, "127.0.0.1", r));
+  base = `http://127.0.0.1:${(srv.address() as AddressInfo).port}`;
+});
+
+afterAll(() => new Promise<void>((r) => srv.close(() => r())));
+
+async function connect(token = "at-fresh") {
+  const api = createClassroomApi(async () => token, base);
+  const server = createServer(api);
+  const [a, b] = InMemoryTransport.createLinkedPair();
+  const client = new Client({ name: "test", version: "0" });
+  await Promise.all([server.connect(a), client.connect(b)]);
+  return client;
+}
+
+async function call(client: Client, name: string, args: Record<string, unknown> = {}) {
+  const res: any = await client.callTool({ name, arguments: args });
+  return { text: res.content[0].text as string, isError: Boolean(res.isError) };
+}
+
+describe("google-classroom-student-mcp", () => {
+  it("exposes only read-only tools", async () => {
+    const { tools } = await (await connect()).listTools();
+    expect(tools.length).toBe(8);
+    for (const t of tools) expect(t.annotations?.readOnlyHint).toBe(true);
+  });
+
+  it("lists classes and follows nextPageToken", async () => {
+    const { text } = await call(await connect(), "get_my_courses");
+    expect(text).toContain("Math (Period 1)");
+    expect(text).toContain("Biology");
+  });
+
+  it("builds a to-do list from work that is not turned in, soonest first", async () => {
+    const { text } = await call(await connect(), "get_todo");
+    expect(text).toContain("Worksheet 1");
+    expect(text).toContain("Project");
+    expect(text).not.toContain("Quiz 2");
+    expect(text).not.toContain("Essay");
+    expect(text.indexOf("Worksheet 1")).toBeLessThan(text.indexOf("Project"));
+    expect(text.indexOf("Project")).toBeLessThan(text.indexOf("no due date") === -1 ? 1e9 : text.indexOf("no due date"));
+  });
+
+  it("separates upcoming from missing", async () => {
+    const c = await connect();
+    const up = (await call(c, "get_upcoming_due_dates")).text;
+    expect(up).toContain("Project");
+    expect(up).not.toContain("Worksheet 1");
+    const missing = (await call(c, "get_missing_assignments")).text;
+    expect(missing).toContain("Worksheet 1");
+    expect(missing).not.toContain("Project");
+  });
+
+  it("labels assignment status for a class", async () => {
+    const { text } = await call(await connect(), "get_assignments", { course_id: "100" });
+    expect(text).toMatch(/Worksheet 1.*not turned in/);
+    expect(text).toMatch(/Quiz 2.*turned in/);
+    expect(text).toMatch(/Reading.*graded 4\/5/);
+  });
+
+  it("adds up graded work per class and says when there is none", async () => {
+    const { text } = await call(await connect(), "get_my_grades");
+    expect(text).toContain("Math 4/5 points on 1 graded items (80.0%)");
+    expect(text).toContain("English 90/100");
+    expect(text).toContain("Biology no graded work yet");
+  });
+
+  it("shows announcements with HTML stripped and materials", async () => {
+    const c = await connect();
+    const ann = (await call(c, "get_announcements")).text;
+    expect(ann).toContain("Test Friday");
+    expect(ann).not.toContain("<b>");
+    expect((await call(c, "get_course_materials", { course_id: "100" })).text).toContain("Slides week 3");
+  });
+
+  it("returns a friendly error when the token is rejected", async () => {
+    const { text, isError } = await call(await connect("stale"), "get_my_courses");
+    expect(isError).toBe(true);
+    expect(text).toContain("Not signed in");
+  });
+
+  it("refreshes tokens, caches them and reports revoked tokens clearly", async () => {
+    const tokenUrl = `${base}/token`;
+    const good = createTokenProvider({ GOOGLE_CLIENT_ID: "id", GOOGLE_CLIENT_SECRET: "s", GOOGLE_REFRESH_TOKEN: "rt-good" }, fetch, tokenUrl);
+    refreshCalls = 0;
+    expect(await good()).toBe("at-fresh");
+    expect(await good()).toBe("at-fresh");
+    expect(refreshCalls).toBe(1);
+    const bad = createTokenProvider({ GOOGLE_CLIENT_ID: "id", GOOGLE_CLIENT_SECRET: "s", GOOGLE_REFRESH_TOKEN: "rt-old" }, fetch, tokenUrl);
+    await expect(bad()).rejects.toThrow(/expired or revoked/);
+    expect(await createTokenProvider({ GOOGLE_ACCESS_TOKEN: "quick" })()).toBe("quick");
+    expect(() => createTokenProvider({})).toThrow(/No Google credentials/);
+  });
+
+  it("builds a read only sign in link and exchanges the code", async () => {
+    const link = new URL(buildAuthUrl("my-id", "http://127.0.0.1:5000"));
+    expect(link.searchParams.get("access_type")).toBe("offline");
+    expect(link.searchParams.get("scope")).toBe(SCOPES.join(" "));
+    for (const s of SCOPES) expect(s.endsWith(".readonly")).toBe(true);
+    const ok = await exchangeCode({ clientId: "a", clientSecret: "b", code: "code-good", redirectUri: "http://x" }, fetch, `${base}/token`);
+    expect(ok.refresh_token).toBe("rt-good");
+    await expect(exchangeCode({ clientId: "a", clientSecret: "b", code: "other", redirectUri: "http://x" }, fetch, `${base}/token`)).rejects.toThrow(/refresh token/);
+  });
+});
