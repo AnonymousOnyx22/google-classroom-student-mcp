@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.AnonymousOnyx22/google-classroom-student-mcp",
+  "description": "Read-only Google Classroom for AI: to-do, due dates, missing work, grades and announcements.",
+  "repository": {
+    "url": "https://github.com/AnonymousOnyx22/google-classroom-student-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "google-classroom-student-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "websiteUrl": "https://brightspacemcp.com"
+}

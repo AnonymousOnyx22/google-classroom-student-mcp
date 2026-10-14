@@ -4,6 +4,8 @@ Ask your AI what's actually left to do in Google Classroom.
 
 This is a free, open source [MCP](https://modelcontextprotocol.io) server. It lets Claude, ChatGPT, Cursor and other AI apps read your Classroom classes, assignments, grades on returned work and announcements. It is **read only**. It can never turn in, edit or delete anything. Not affiliated with Google.
 
+Free forever. No sign up and no subscription. Your login details only ever go to Google.
+
 ## Setup (about 10 minutes, one time)
 
 Google makes every app ask for its own permission, so you create a small private "app" that only you use.

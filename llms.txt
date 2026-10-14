@@ -1,0 +1,22 @@
+# google-classroom-student-mcp
+
+> Free, open source, read only MCP server that lets AI apps (Claude, ChatGPT, Cursor, Copilot and others) read a student's Google Classroom courses, due dates, grades and announcements. It cannot submit, edit or delete anything.
+
+## Setup
+- Needs GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_REFRESH_TOKEN.
+- Run the one time login command from the README to get a refresh token.
+- Run with npx -y google-classroom-student-mcp. Run `npx google-classroom-student-mcp doctor` to check the setup.
+
+## Tools (all read only)
+- get_my_courses
+- get_todo
+- get_upcoming_due_dates
+- get_missing_assignments
+- get_assignments
+- get_my_grades
+- get_announcements
+- get_course_materials
+
+## Links
+- Source and README, https://github.com/AnonymousOnyx22/google-classroom-student-mcp
+- Also available, Brightspace MCP for D2L Brightspace, https://brightspacemcp.com

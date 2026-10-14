@@ -1,21 +1,75 @@
 {
   "name": "google-classroom-student-mcp",
   "version": "0.1.0",
-  "description": "Read-only MCP server that lets Claude, ChatGPT and other AI apps see your Google Classroom courses, coursework and announcements.",
+  "description": "Read-only Google Classroom for AI: to-do, due dates, missing work, grades and announcements.",
   "type": "module",
   "main": "build/src/index.js",
-  "bin": { "google-classroom-student-mcp": "build/src/index.js" },
-  "files": ["build/src", "README.md", "LICENSE"],
-  "engines": { "node": ">=20" },
+  "bin": {
+    "google-classroom-student-mcp": "build/src/index.js"
+  },
+  "files": [
+    "build/src",
+    "README.md",
+    "llms.txt",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsc && node -e \"require('fs').chmodSync('build/src/index.js', 0o755)\"",
     "test": "vitest run",
     "start": "node build/src/index.js"
   },
-  "keywords": ["mcp", "model-context-protocol", "google-classroom"],
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "lms",
+    "learning-management-system",
+    "student",
+    "students",
+    "education",
+    "edtech",
+    "university",
+    "college",
+    "school",
+    "ai-agent",
+    "agent",
+    "claude",
+    "claude-desktop",
+    "claude-code",
+    "chatgpt",
+    "cursor",
+    "copilot",
+    "windsurf",
+    "llm",
+    "assignments",
+    "grades",
+    "due-dates",
+    "homework",
+    "study",
+    "study-planner",
+    "announcements",
+    "course-content",
+    "read-only",
+    "google-classroom",
+    "classroom",
+    "google-classroom-api",
+    "google-classroom-mcp",
+    "google-workspace-for-education",
+    "gsuite-for-education",
+    "classroom-ai",
+    "classroom-grades",
+    "classroom-assignments"
+  ],
   "author": "AnonymousOnyx22",
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/AnonymousOnyx22/google-classroom-student-mcp.git" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AnonymousOnyx22/google-classroom-student-mcp.git"
+  },
   "homepage": "https://brightspacemcp.com",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
@@ -25,5 +79,9 @@
     "@types/node": "^22.0.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
+  },
+  "mcpName": "io.github.AnonymousOnyx22/google-classroom-student-mcp",
+  "bugs": {
+    "url": "https://github.com/AnonymousOnyx22/google-classroom-student-mcp/issues"
   }
 }
