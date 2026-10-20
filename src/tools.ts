@@ -5,6 +5,8 @@ import { type ToolDef, bullets, fmtDate, stripHtml } from "./core/tools.js";
 type Api = ClassroomApi;
 
 const courseId = z.union([z.string(), z.number()]).describe("Classroom course ID. Use get_my_courses to find it.");
+const courseIds = z.array(courseId).optional().describe("Classroom course IDs to check. Leave empty for all active classes.");
+const daysAhead = z.number().int().positive().optional().describe("Only show work due within this many days from now. Leave empty for every future due date.");
 
 interface Course {
   id: string;
@@ -66,8 +68,15 @@ async function courseWork(api: Api, course: Course): Promise<WorkItem[]> {
   });
 }
 
-async function allWork(api: Api): Promise<WorkItem[]> {
-  const courses = (await activeCourses(api)).slice(0, 15);
+async function coursesFor(api: Api, ids?: string[]): Promise<Course[]> {
+  const courses = await activeCourses(api);
+  if (!ids?.length) return courses.slice(0, 15);
+  const byId = new Map(courses.map((c) => [String(c.id), c]));
+  return ids.slice(0, 15).map((id) => byId.get(String(id)) ?? { id: String(id), name: `class ${id}` });
+}
+
+async function allWork(api: Api, ids?: string[]): Promise<WorkItem[]> {
+  const courses = await coursesFor(api, ids);
   return (await Promise.all(courses.map((c) => courseWork(api, c)))).flat();
 }
 
@@ -93,10 +102,10 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_todo",
     title: "To-do list",
-    description: "Everything assigned that the student has not turned in yet, across all classes.",
-    inputSchema: {},
-    run: async (_args, api) => {
-      const items = (await allWork(api)).filter((i) => OPEN.has(i.state));
+    description: "Everything assigned that the student has not turned in yet. Pass course_ids to limit it, or leave empty for all active classes.",
+    inputSchema: { course_ids: courseIds },
+    run: async ({ course_ids }, api) => {
+      const items = (await allWork(api, course_ids)).filter((i) => OPEN.has(i.state));
       items.sort((a, b) => (a.due?.getTime() ?? 9e15) - (b.due?.getTime() ?? 9e15));
       return bullets(items.map((i) => `${i.title} (${i.course}) due ${dueText(i)}`), "Nothing left to turn in.");
     },
@@ -104,11 +113,14 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_upcoming_due_dates",
     title: "Upcoming due dates",
-    description: "Work that is due soon and not turned in, soonest first.",
-    inputSchema: {},
-    run: async (_args, api) => {
+    description: "Work that is due soon and not turned in, soonest first. Pass course_ids or days_ahead to narrow it, or leave both empty.",
+    inputSchema: { course_ids: courseIds, days_ahead: daysAhead },
+    run: async ({ course_ids, days_ahead }, api) => {
       const now = Date.now();
-      const items = (await allWork(api)).filter((i) => OPEN.has(i.state) && i.due && i.due.getTime() >= now);
+      const until = days_ahead == null ? Infinity : now + days_ahead * 86400000;
+      const items = (await allWork(api, course_ids)).filter(
+        (i) => OPEN.has(i.state) && i.due && i.due.getTime() >= now && i.due.getTime() <= until,
+      );
       items.sort((a, b) => a.due!.getTime() - b.due!.getTime());
       return bullets(items.map((i) => `${i.title} (${i.course}) due ${dueText(i)}`), "No upcoming due dates.");
     },
@@ -116,11 +128,11 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_missing_assignments",
     title: "Missing assignments",
-    description: "Past due work that has not been turned in.",
-    inputSchema: {},
-    run: async (_args, api) => {
+    description: "Past due work that has not been turned in. Pass course_ids to limit it, or leave empty for all active classes.",
+    inputSchema: { course_ids: courseIds },
+    run: async ({ course_ids }, api) => {
       const now = Date.now();
-      const items = (await allWork(api)).filter((i) => OPEN.has(i.state) && i.due && i.due.getTime() < now);
+      const items = (await allWork(api, course_ids)).filter((i) => OPEN.has(i.state) && i.due && i.due.getTime() < now);
       items.sort((a, b) => b.due!.getTime() - a.due!.getTime());
       return bullets(items.map((i) => `${i.title} (${i.course}) was due ${dueText(i)}`), "No missing assignments.");
     },
@@ -143,10 +155,10 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_my_grades",
     title: "My grades",
-    description: "Grades on returned work for each class. Google Classroom has no overall grade, so this adds up graded work only.",
-    inputSchema: {},
-    run: async (_args, api) => {
-      const courses = (await activeCourses(api)).slice(0, 15);
+    description: "Grades on returned work for each class. Google Classroom has no overall grade, so this adds up graded work only. Pass course_ids to limit it, or leave empty for all active classes.",
+    inputSchema: { course_ids: courseIds },
+    run: async ({ course_ids }, api) => {
+      const courses = await coursesFor(api, course_ids);
       const perCourse = await Promise.all(courses.map((c) => courseWork(api, c)));
       const lines: string[] = [];
       for (const [idx, list] of perCourse.entries()) {

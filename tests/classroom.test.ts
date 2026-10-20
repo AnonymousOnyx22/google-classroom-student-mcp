@@ -68,7 +68,7 @@ beforeAll(async () => {
         { courseWorkId: "w3", state: "CREATED" },
         { courseWorkId: "w4", state: "RETURNED", assignedGrade: 4 },
       ] });
-    if (p === "/v1/courses/200/courseWork") return send(200, { courseWork: [{ id: "e1", title: "Essay", ...dueParts(-10), maxPoints: 100 }] });
+    if (p === "/v1/courses/200/courseWork") return send(200, { courseWork: [{ id: "e1", title: "Essay", ...dueParts(-10), maxPoints: 100 }, { id: "e2", title: "Outline", ...dueParts(7), maxPoints: 25 }] });
     if (p === "/v1/courses/200/courseWork/-/studentSubmissions") return send(200, { studentSubmissions: [{ courseWorkId: "e1", state: "RETURNED", assignedGrade: 90 }] });
     if (p === "/v1/courses/300/courseWork" || p === "/v1/courses/300/courseWork/-/studentSubmissions") return send(200, {});
     if (p.endsWith("/announcements"))
@@ -127,6 +127,30 @@ describe("google-classroom-student-mcp", () => {
     const missing = (await call(c, "get_missing_assignments")).text;
     expect(missing).toContain("Worksheet 1");
     expect(missing).not.toContain("Project");
+  });
+
+  it("limits work to the given course ids", async () => {
+    const c = await connect();
+    const todo = (await call(c, "get_todo", { course_ids: ["200"] })).text;
+    expect(todo).toContain("Outline");
+    expect(todo).not.toContain("Worksheet 1");
+    const up = (await call(c, "get_upcoming_due_dates", { course_ids: ["100"] })).text;
+    expect(up).toContain("Project");
+    expect(up).not.toContain("Outline");
+    const missing = (await call(c, "get_missing_assignments", { course_ids: ["200"] })).text;
+    expect(missing).toContain("No missing assignments.");
+    const grades = (await call(c, "get_my_grades", { course_ids: ["200"] })).text;
+    expect(grades).toContain("English 90/100");
+    expect(grades).not.toContain("Math");
+  });
+
+  it("caps how far ahead it looks with days_ahead", async () => {
+    const c = await connect();
+    const wide = (await call(c, "get_upcoming_due_dates", { days_ahead: 10 })).text;
+    expect(wide).toContain("Project");
+    expect(wide).toContain("Outline");
+    const narrow = (await call(c, "get_upcoming_due_dates", { days_ahead: 1 })).text;
+    expect(narrow).toContain("No upcoming due dates.");
   });
 
   it("labels assignment status for a class", async () => {

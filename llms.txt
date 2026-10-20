@@ -17,6 +17,8 @@
 - get_announcements
 - get_course_materials
 
+get_todo, get_upcoming_due_dates, get_missing_assignments and get_my_grades take an optional course_ids list to check specific classes only. get_upcoming_due_dates also takes an optional days_ahead number. get_announcements takes optional course_ids too.
+
 ## Links
 - Source and README, https://github.com/AnonymousOnyx22/google-classroom-student-mcp
 - More free student MCP servers, https://brightspacemcp.com/more-mcps/
