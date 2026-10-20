@@ -1,7 +1,7 @@
 {
   "name": "google-classroom-student-mcp",
   "version": "0.1.1",
-  "description": "Read-only Google Classroom for AI: to-do, due dates, missing work, grades and announcements.",
+  "description": "Google Classroom MCP: read-only Google Classroom for AI. To-do, due dates, missing work, grades and announcements.",
   "type": "module",
   "main": "build/src/index.js",
   "bin": {
