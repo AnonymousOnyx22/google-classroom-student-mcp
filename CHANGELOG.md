@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3
+
+- Small fixes and clearer docs
+
 ## 0.1.2
 
 - Keep llms.txt and glama.json in lockstep with the 8 tool descriptions vi
