@@ -1,11 +1,11 @@
-# Google Classroom MCP for students
+# Google Classroom MCP server for students
 
 [![npm version](https://img.shields.io/npm/v/google-classroom-student-mcp.svg)](https://www.npmjs.com/package/google-classroom-student-mcp)
 [![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-blue.svg)](https://modelcontextprotocol.io)
 
 Ask your AI what's actually left to do in Google Classroom.
 
-This is a free, open source [MCP](https://modelcontextprotocol.io) server. It lets Claude, ChatGPT, Cursor and other AI apps read your Classroom classes, assignments, grades on returned work and announcements. It is **read only**. It can never turn in, edit or delete anything. Not affiliated with Google.
+This is the Google Classroom MCP server: a free, open source [MCP](https://modelcontextprotocol.io) server that lets Claude, ChatGPT, Cursor and other AI apps read your Classroom classes, assignments, due dates, missing work, grades on returned work, announcements and course materials. It is **read only**. It can never turn in, edit or delete anything. Not affiliated with Google.
 
 Free forever. No sign up and no subscription. Your login details only ever go to Google.
 
@@ -19,7 +19,7 @@ Ask these right after setup:
 
 ## Quick start with npx
 
-Add this to your AI app's MCP config (for Claude Desktop that's `claude_desktop_config.json`):
+Install the Google Classroom MCP server with npx, then add this to your AI app's MCP config (for Claude Desktop that's `claude_desktop_config.json`):
 
 ```json
 {

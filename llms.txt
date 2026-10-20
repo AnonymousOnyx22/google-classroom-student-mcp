@@ -1,6 +1,6 @@
 # google-classroom-student-mcp
 
-> Free, open source, read only MCP server that lets AI apps (Claude, ChatGPT, Cursor, Copilot and others) read a student's Google Classroom courses, due dates, grades and announcements. It cannot submit, edit or delete anything.
+> Free, open source, read only Google Classroom MCP server that lets AI apps (Claude, ChatGPT, Cursor, Copilot and others) read a student's Google Classroom courses, assignments, due dates, missing work, grades and announcements. It cannot submit, edit or delete anything.
 
 ## Setup
 - Needs GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_REFRESH_TOKEN.
