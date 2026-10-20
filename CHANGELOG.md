@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.2
+
+- Keep llms.txt and glama.json in lockstep with the 8 tool descriptions vi
+- Rewrite description and keywords around the phrase google classroom mcp
+- Add a version parity check and file the approval to publish 0.1.1 to the official registry
+- Turn Google 401, 403 and 404 responses into messages that match the README Troubleshooting table
+- Add optional course_ids and days_ahead arguments to get_todo, get_upcoming_due_dates, get_missing_assignments and get_my
+- Restructure the README first screen around npx install and three example asks
+- Rewrite the npm description to lead with the literal phrase 'Google Classroom MCP'
+
 ## Unreleased
 
 - The package description and the npm keywords now spell out "Google Classroom MCP", so the server shows up when people search npm for that phrase.
