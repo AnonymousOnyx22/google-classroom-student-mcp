@@ -4,6 +4,7 @@
 
 - get_todo, get_upcoming_due_dates, get_missing_assignments and get_my_grades now take an optional course_ids list, so you can check specific classes only.
 - get_upcoming_due_dates now takes an optional days_ahead number to cap how far ahead it looks.
+- Added a test that keeps llms.txt and glama.json in step with the tool list and the tool descriptions.
 
 ## 0.1.1
 

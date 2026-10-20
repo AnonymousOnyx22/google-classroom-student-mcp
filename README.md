@@ -111,7 +111,7 @@ npm run build
 npm test
 ```
 
-Tests run against a fake Google server, so they need no account or network.
+Tests run against a fake Google server, so they need no account or network. One test also checks that llms.txt and glama.json still list every tool with the same description.
 
 ## More free student MCP servers
 
