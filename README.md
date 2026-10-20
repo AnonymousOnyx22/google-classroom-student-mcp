@@ -1,10 +1,41 @@
 # Google Classroom MCP for students
 
+[![npm version](https://img.shields.io/npm/v/google-classroom-student-mcp.svg)](https://www.npmjs.com/package/google-classroom-student-mcp)
+[![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-blue.svg)](https://modelcontextprotocol.io)
+
 Ask your AI what's actually left to do in Google Classroom.
 
 This is a free, open source [MCP](https://modelcontextprotocol.io) server. It lets Claude, ChatGPT, Cursor and other AI apps read your Classroom classes, assignments, grades on returned work and announcements. It is **read only**. It can never turn in, edit or delete anything. Not affiliated with Google.
 
 Free forever. No sign up and no subscription. Your login details only ever go to Google.
+
+## Try it now
+
+Ask these right after setup:
+
+- "What do I still need to turn in?"
+- "What's overdue?"
+- "What's due this week across all my classes?"
+
+## Quick start with npx
+
+Add this to your AI app's MCP config (for Claude Desktop that's `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "classroom": {
+      "command": "npx",
+      "args": ["-y", "google-classroom-student-mcp"],
+      "env": {
+        "GOOGLE_CLIENT_ID": "your-id",
+        "GOOGLE_CLIENT_SECRET": "your-secret",
+        "GOOGLE_REFRESH_TOKEN": "paste-from-login"
+      }
+    }
+  }
+}
+```
 
 ## Setup (about 10 minutes, one time)
 
@@ -22,23 +53,7 @@ GOOGLE_CLIENT_ID=your-id GOOGLE_CLIENT_SECRET=your-secret npx google-classroom-s
 
 Open the link it prints, approve read only access, and copy the three values it prints.
 
-6. Add them to your AI app's MCP config (for Claude Desktop that's `claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "classroom": {
-      "command": "npx",
-      "args": ["-y", "google-classroom-student-mcp"],
-      "env": {
-        "GOOGLE_CLIENT_ID": "your-id",
-        "GOOGLE_CLIENT_SECRET": "your-secret",
-        "GOOGLE_REFRESH_TOKEN": "paste-from-login"
-      }
-    }
-  }
-}
-```
+6. Add them to your AI app's MCP config (for Claude Desktop that's `claude_desktop_config.json`).
 
 7. Restart your AI app and ask "what's due this week?"
 
