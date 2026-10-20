@@ -54,6 +54,7 @@ beforeAll(async () => {
       if (url.searchParams.get("pageToken") === "p2") return send(200, { courses: [{ id: "300", name: "Biology" }] });
       return send(200, { courses: [{ id: "100", name: "Math", section: "Period 1" }, { id: "200", name: "English" }], nextPageToken: "p2" });
     }
+    if (p.startsWith("/v1/courses/403/")) return send(403, {});
     if (p === "/v1/courses/100/courseWork")
       return send(200, { courseWork: [
         { id: "w1", title: "Worksheet 1", ...dueParts(-3), maxPoints: 10 },
@@ -179,6 +180,20 @@ describe("google-classroom-student-mcp", () => {
     const { text, isError } = await call(await connect("stale"), "get_my_courses");
     expect(isError).toBe(true);
     expect(text).toContain("Not signed in");
+    expect(text).toContain("Run `login` again to get a new refresh token");
+  });
+
+  it("maps 403 and 404 to the README troubleshooting fixes", async () => {
+    const c = await connect();
+    const denied = await call(c, "get_assignments", { course_id: "403" });
+    expect(denied.isError).toBe(true);
+    expect(denied.text).toContain("Access denied");
+    expect(denied.text).toContain("school's Google admin may block third party apps");
+    expect(denied.text).toContain("Ask your admin or use a personal account");
+    const missing = await call(c, "get_assignments", { course_id: "999" });
+    expect(missing.isError).toBe(true);
+    expect(missing.text).toContain("Not found");
+    expect(missing.text).toContain("Check the course or item ID");
   });
 
   it("refreshes tokens, caches them and reports revoked tokens clearly", async () => {
@@ -190,6 +205,8 @@ describe("google-classroom-student-mcp", () => {
     expect(refreshCalls).toBe(1);
     const bad = createTokenProvider({ GOOGLE_CLIENT_ID: "id", GOOGLE_CLIENT_SECRET: "s", GOOGLE_REFRESH_TOKEN: "rt-old" }, fetch, tokenUrl);
     await expect(bad()).rejects.toThrow(/expired or revoked/);
+    await expect(bad()).rejects.toThrow(/expires refresh tokens after 7 days/);
+    await expect(bad()).rejects.toThrow(/Run `login` again/);
     expect(await createTokenProvider({ GOOGLE_ACCESS_TOKEN: "quick" })()).toBe("quick");
     expect(() => createTokenProvider({})).toThrow(/No Google credentials/);
   });

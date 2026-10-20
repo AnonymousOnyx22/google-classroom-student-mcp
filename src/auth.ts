@@ -27,7 +27,9 @@ async function postForm(url: string, body: Record<string, string>, fetchImpl: ty
   const data: any = await res.json().catch(() => ({}));
   if (!res.ok) {
     const why = data.error_description ?? data.error ?? `HTTP ${res.status}`;
-    throw new Error(`Google sign-in failed (${why}). Run the login command again to get a new refresh token.`);
+    throw new Error(
+      `Google sign-in failed (${why}). While your app is in testing mode, Google expires refresh tokens after 7 days. Run \`login\` again to get a new refresh token.`,
+    );
   }
   return data;
 }

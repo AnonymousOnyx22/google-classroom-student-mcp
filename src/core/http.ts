@@ -100,11 +100,11 @@ export function createClient(opts: ClientOptions): HttpClient {
 export function describeStatus(status: number): string {
   switch (status) {
     case 401:
-      return "Not signed in. The access token is missing, expired or was revoked. Create a new one and update your config.";
+      return "Not signed in. Run `login` again to get a new refresh token. If you set GOOGLE_ACCESS_TOKEN instead, it stops working after about an hour.";
     case 403:
-      return "Access denied. Your school may have turned this feature off for students.";
+      return "Access denied. Your school's Google admin may block third party apps. Ask your admin or use a personal account.";
     case 404:
-      return "Not found. Check the course or item ID.";
+      return "Not found. Check the course or item ID in your request.";
     case 429:
       return "Rate limited by the school's server. Wait a minute and try again.";
     default:
