@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The README now has a Questions students ask section. It lists the questions students ask, the tool that answers each one and what the answer holds.
+- The README now has a sample answer for get_todo, get_missing_assignments and get_whats_new, next to the sample for get_upcoming_due_dates. llms.txt carries the same samples.
+- Added a test that checks every sample answer in the README and in llms.txt matches what the tool really prints, and a test that checks the questions in both files name the same tools.
+
 - The README header now has a badge for every directory the server is listed in: Smithery, Glama and mcp.so. Each badge links to the server page in that directory, and the README names the three directories in the text as well.
 - package.json and server.json now point at the list of free student MCP servers on brightspacemcp.com, so the npm page and the registry entry land on the page that lists the server.
 - llms.txt now links the three directories in its Links section.

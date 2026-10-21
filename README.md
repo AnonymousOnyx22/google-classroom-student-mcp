@@ -31,7 +31,7 @@ The third question goes to `get_upcoming_due_dates`. It reads your classes and p
 - Problem set 4 (Calculus) due Mon, Oct 26
 ```
 
-Every line has the assignment title, the class and the due date. Work you already turned in is left out. Pass `days_ahead` set to 7 to that tool for a week ahead. Classroom keeps due times in UTC, and the server prints them in your own time zone.
+Every line has the assignment title, the class and the due date. Work you already turned in is left out. Pass `days_ahead` set to 7 to that tool for a week ahead. Classroom keeps due times in UTC, and the server prints them in your own time zone. More sample answers are in [Questions students ask](#questions-students-ask).
 
 ## Quick start with npx
 
@@ -117,13 +117,71 @@ Run `npx google-classroom-student-mcp doctor` any time to check that your setup 
 
 > Quick test without the app setup: set `GOOGLE_ACCESS_TOKEN` to a token from the [OAuth Playground](https://developers.google.com/oauthplayground/) with the Classroom read only scopes. It stops working after about an hour.
 
-## What you can ask
+## Questions students ask
 
-- "What do I still need to turn in?"
-- "What's overdue?"
-- "What's due this week across all my classes?"
-- "What did my teachers post lately?"
-- "What's new since yesterday?"
+Here are the questions students ask, and the tool that answers each one. The answer comes back in the chat, ready to read.
+
+| Your question | Tool | What the answer holds |
+| --- | --- | --- |
+| "What do I still need to turn in?" | `get_todo` | Every assignment you have not handed in, with a link to open it in Classroom |
+| "What's overdue?" | `get_missing_assignments` | Work that was due and is still not handed in |
+| "What's due this week across all my classes?" | `get_upcoming_due_dates` | Work that is due soon, soonest first |
+| "What did my teachers post lately?" | `get_announcements` | Recent announcements from every class |
+| "What's new since yesterday?" | `get_whats_new` | New announcements, new grades, overdue work and what is due next |
+
+Here is what the answers look like.
+
+### Sample answer for get_todo
+
+The question "What do I still need to turn in?" goes to `get_todo`. It prints everything you have not handed in, and it puts the Classroom page of each one under the title so you can open the work itself.
+
+```text
+- Lab safety form (English) due Fri, Oct 9
+  link: https://classroom.google.com/c/English/course/1/courseWork/w2
+- Chapter 3 questions (Biology) due Mon, Oct 19
+  link: https://classroom.google.com/c/Biology/course/2/courseWork/w4
+- Essay outline (English) due Fri, Oct 23
+  link: https://classroom.google.com/c/English/course/1/courseWork/w1
+- Lab write up (Biology) due Fri, Oct 23, 11:59 p.m. UTC
+  link: https://classroom.google.com/c/Biology/course/2/courseWork/w3
+- Problem set 4 (Calculus) due Mon, Oct 26
+  link: https://classroom.google.com/c/Calculus/course/3/courseWork/w5
+```
+
+Work you already turned in is left out, and work with no due date goes last. Pass `course_ids` to check a few classes only.
+
+### Sample answer for get_missing_assignments
+
+The question "What's overdue?" goes to `get_missing_assignments`. It prints the work that was due and is still not handed in, the most recent due date first.
+
+```text
+- Chapter 3 questions (Biology) was due Mon, Oct 19
+- Lab safety form (English) was due Fri, Oct 9
+```
+
+### Sample answer for get_whats_new
+
+The question "What's new since yesterday?" goes to `get_whats_new`. It prints one digest with new announcements, new grades, overdue work and what is due next. The times in this sample are in UTC.
+
+```text
+New announcements (last 7 days)
+- Biology (Wed, Oct 21, 8:00 a.m. UTC) Field trip permission slip due Friday
+- English (Tue, Oct 20, 9:00 a.m. UTC) Bring your textbook
+
+New grades (last 7 days)
+- Midterm review (Calculus) graded 88/100 on Tue, Oct 20, 3:00 p.m. UTC
+
+Overdue work
+- Chapter 3 questions (Biology) was due Mon, Oct 19
+- Lab safety form (English) was due Fri, Oct 9
+
+Due next (14 days)
+- Essay outline (English) due Fri, Oct 23
+- Lab write up (Biology) due Fri, Oct 23, 11:59 p.m. UTC
+- Problem set 4 (Calculus) due Mon, Oct 26
+```
+
+Pass `since_days` to look further back and `days_ahead` to look further ahead.
 
 ## Tools
 
@@ -198,7 +256,7 @@ npm run build
 npm test
 ```
 
-Tests run against a fake Google server, so they need no account or network. Other tests check that the tool table in this README, [llms.txt](./llms.txt) and glama.json still list every tool, that the tool descriptions in llms.txt and glama.json match the code, and that the version matches package.json.
+Tests run against a fake Google server, so they need no account or network. Other tests check that the tool table in this README, [llms.txt](./llms.txt) and glama.json still list every tool, that the tool descriptions in llms.txt and glama.json match the code, that every sample answer in this README and in llms.txt matches what the tool really prints, and that the version matches package.json.
 
 The version that `--version` prints and the MCP handshake sends comes from package.json, so bump the version there and nowhere else.
 

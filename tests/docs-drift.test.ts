@@ -2,6 +2,10 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { tools } from "../src/tools.js";
 
+// The sample answers in the README show the times in UTC, so the checks below
+// have to run in the same time zone.
+process.env.TZ = "UTC";
+
 const expected = tools.map((t) => ({ name: t.name, description: t.description }));
 const expectedNames = expected.map((t) => t.name);
 
@@ -293,6 +297,91 @@ function stubApi(work: any[]): any {
   };
 }
 
+/**
+ * A stand in Classroom API with one student, three classes and a fixed set of
+ * work, so every sample answer in the docs can be checked against the tools.
+ */
+function sampleApi(): any {
+  const courses = [
+    { id: "1", name: "English" },
+    { id: "2", name: "Biology" },
+    { id: "3", name: "Calculus" },
+  ];
+  const work: Record<string, any[]> = {
+    "1": [
+      { id: "w1", title: "Essay outline", dueDate: { year: 2026, month: 10, day: 23 }, alternateLink: "https://classroom.google.com/c/English/course/1/courseWork/w1" },
+      { id: "w2", title: "Lab safety form", dueDate: { year: 2026, month: 10, day: 9 }, alternateLink: "https://classroom.google.com/c/English/course/1/courseWork/w2" },
+    ],
+    "2": [
+      { id: "w3", title: "Lab write up", dueDate: { year: 2026, month: 10, day: 23 }, dueTime: { hours: 23, minutes: 59 }, alternateLink: "https://classroom.google.com/c/Biology/course/2/courseWork/w3" },
+      { id: "w4", title: "Chapter 3 questions", dueDate: { year: 2026, month: 10, day: 19 }, alternateLink: "https://classroom.google.com/c/Biology/course/2/courseWork/w4" },
+    ],
+    "3": [
+      { id: "w5", title: "Problem set 4", dueDate: { year: 2026, month: 10, day: 26 }, alternateLink: "https://classroom.google.com/c/Calculus/course/3/courseWork/w5" },
+      { id: "w6", title: "Midterm review", dueDate: { year: 2026, month: 10, day: 12 }, maxPoints: 100, updateTime: "2026-10-20T15:00:00Z" },
+    ],
+  };
+  const submissions: Record<string, any[]> = {
+    "1": [
+      { courseWorkId: "w1", state: "NEW" },
+      { courseWorkId: "w2", state: "NEW" },
+    ],
+    "2": [
+      { courseWorkId: "w3", state: "CREATED" },
+      { courseWorkId: "w4", state: "NEW" },
+    ],
+    "3": [
+      { courseWorkId: "w5", state: "NEW" },
+      { courseWorkId: "w6", state: "RETURNED", assignedGrade: 88 },
+    ],
+  };
+  const announcements: Record<string, any[]> = {
+    "1": [{ text: "Bring your textbook", updateTime: "2026-10-20T09:00:00Z" }],
+    "2": [{ text: "Field trip permission slip due Friday", updateTime: "2026-10-21T08:00:00Z" }],
+    "3": [{ text: "Office hours moved to Thursday", updateTime: "2026-10-05T10:00:00Z" }],
+  };
+  return {
+    get: async () => ({}),
+    list: async (path: string) => {
+      const found = path.match(/^\/v1\/courses\/([^/]+)\/(.*)$/);
+      if (path === "/v1/courses") return courses;
+      if (!found) return [];
+      const id = found[1];
+      const kind = found[2];
+      if (kind === "courseWork") return work[id] ?? [];
+      if (kind.endsWith("studentSubmissions")) return submissions[id] ?? [];
+      if (kind === "announcements") return announcements[id] ?? [];
+      return [];
+    },
+  };
+}
+
+/** The heading above each sample answer, in the README and in llms.txt. */
+const SAMPLE_BLOCKS = [
+  { tool: "get_upcoming_due_dates", readme: "### Sample answer", llms: "## Example answer" },
+  { tool: "get_todo", readme: "### Sample answer for get_todo", llms: "### Example answer for get_todo" },
+  {
+    tool: "get_missing_assignments",
+    readme: "### Sample answer for get_missing_assignments",
+    llms: "### Example answer for get_missing_assignments",
+  },
+  { tool: "get_whats_new", readme: "### Sample answer for get_whats_new", llms: "### Example answer for get_whats_new" },
+];
+
+/** The text inside the code block that follows a heading. */
+function codeBlockAfter(file: string, heading: string): string {
+  const lines = readRootFile(file)
+    .split("\n")
+    .map((l) => (l.endsWith("\r") ? l.slice(0, -1) : l));
+  const start = lines.indexOf(heading);
+  expect(start, `${file} has no "${heading}" heading`).toBeGreaterThan(-1);
+  const open = lines.findIndex((l, i) => i > start && l.startsWith("```"));
+  expect(open, `${file} has no code block after "${heading}"`).toBeGreaterThan(-1);
+  const close = lines.findIndex((l, i) => i > open && l.startsWith("```"));
+  expect(close, `${file} has an unfinished code block after "${heading}"`).toBeGreaterThan(-1);
+  return lines.slice(open + 1, close).join("\n");
+}
+
 describe("the README compares the Classroom server with the Brightspace server", () => {
   it("has a comparison section that names both packages", () => {
     const section = compareSection();
@@ -353,5 +442,56 @@ describe("the sample answer matches what the tool prints", () => {
     expect(lines.length).toBeGreaterThanOrEqual(3);
     expect(lines[0]).toBe("- Essay outline (English) due Fri, Oct 23");
     expect(sampleLines("llms.txt")).toEqual(lines);
+  });
+
+  it("prints every sample answer the way its tool prints it", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(FIXED_NOW);
+    const api = sampleApi();
+    for (const block of SAMPLE_BLOCKS) {
+      const tool = tools.find((t) => t.name === block.tool);
+      expect(tool, `no tool called ${block.tool}`).toBeDefined();
+      const out = await tool!.run({}, api);
+      expect(codeBlockAfter("README.md", block.readme), `README sample for ${block.tool}`).toBe(out);
+      expect(codeBlockAfter("llms.txt", block.llms), `llms.txt sample for ${block.tool}`).toBe(out);
+    }
+  });
+});
+
+/** The questions block in the README, one row per question. */
+const README_QUESTION = /^\|\s*"(.*?)"\s*\|\s*`([a-z0-9_]+)`\s*\|\s*(.*?)\s*\|\s*$/;
+
+/** The questions block in llms.txt, one line per question. */
+const LLMS_QUESTION = /^-\s*"(.*?)"\s*goes to ([a-z0-9_]+)\b/;
+
+/** The questions in a file, each with the tool that answers it. */
+function questionsIn(file: string, pattern: RegExp): { question: string; tool: string; summary: string }[] {
+  const section = readRootFile(file).split(/^## /m).find((s) => s.startsWith("Questions students ask"));
+  expect(section, `${file} has no Questions students ask section`).toBeDefined();
+  const out: { question: string; tool: string; summary: string }[] = [];
+  for (const raw of section!.split("\n")) {
+    const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
+    const found = line.match(pattern);
+    if (found) out.push({ question: found[1], tool: found[2], summary: found[3] ?? "" });
+  }
+  return out;
+}
+
+describe("the README answers the questions students ask", () => {
+  it("points every question at a tool that exists and says what it gives back", () => {
+    const rows = questionsIn("README.md", README_QUESTION);
+    expect(rows.length).toBeGreaterThanOrEqual(4);
+    for (const row of rows) {
+      expect(expectedNames, `the question "${row.question}" points at an unknown tool`).toContain(row.tool);
+      expect(row.question.length, `the question "${row.question}" is empty`).toBeGreaterThan(0);
+      expect(row.summary.length, `the question "${row.question}" says nothing about the answer`).toBeGreaterThan(0);
+    }
+  });
+
+  it("asks the same questions in llms.txt and points at the same tools", () => {
+    const rows = questionsIn("README.md", README_QUESTION);
+    const lines = questionsIn("llms.txt", LLMS_QUESTION);
+    expect(lines.map((l) => l.question)).toEqual(rows.map((r) => r.question));
+    expect(lines.map((l) => l.tool)).toEqual(rows.map((r) => r.tool));
   });
 });

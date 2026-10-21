@@ -24,13 +24,66 @@ get_todo, get_assignments, get_announcements and get_course_materials print the 
 
 An announcement counts as new when it was posted or changed inside the window. The date of a new grade comes from the teacher's comment on the work when there is one, otherwise from the last change to the assignment.
 
+## Questions students ask
+- "What do I still need to turn in?" goes to get_todo: every assignment you have not handed in, with a link to open it in Classroom.
+- "What's overdue?" goes to get_missing_assignments: work that was due and is still not handed in.
+- "What's due this week across all my classes?" goes to get_upcoming_due_dates: work that is due soon, soonest first.
+- "What did my teachers post lately?" goes to get_announcements: recent announcements from every class.
+- "What's new since yesterday?" goes to get_whats_new: new announcements, new grades, overdue work and what is due next.
+
 ## Example answer
 The question "What's due this week across all my classes?" is answered by get_upcoming_due_dates, which prints one line per assignment, soonest first:
+```text
 - Essay outline (English) due Fri, Oct 23
 - Lab write up (Biology) due Fri, Oct 23, 11:59 p.m. UTC
 - Problem set 4 (Calculus) due Mon, Oct 26
+```
 
 Every line has the assignment title, the class and the due date. Work you already turned in is left out. Classroom keeps due times in UTC, and the server prints them in your own time zone.
+
+### Example answer for get_todo
+The question "What do I still need to turn in?" is answered by get_todo, which prints everything you have not handed in and puts the Classroom page of each one under the title:
+```text
+- Lab safety form (English) due Fri, Oct 9
+  link: https://classroom.google.com/c/English/course/1/courseWork/w2
+- Chapter 3 questions (Biology) due Mon, Oct 19
+  link: https://classroom.google.com/c/Biology/course/2/courseWork/w4
+- Essay outline (English) due Fri, Oct 23
+  link: https://classroom.google.com/c/English/course/1/courseWork/w1
+- Lab write up (Biology) due Fri, Oct 23, 11:59 p.m. UTC
+  link: https://classroom.google.com/c/Biology/course/2/courseWork/w3
+- Problem set 4 (Calculus) due Mon, Oct 26
+  link: https://classroom.google.com/c/Calculus/course/3/courseWork/w5
+```
+
+Work you already turned in is left out, and work with no due date goes last.
+
+### Example answer for get_missing_assignments
+The question "What's overdue?" is answered by get_missing_assignments, which prints the work that was due and is still not handed in, the most recent due date first:
+```text
+- Chapter 3 questions (Biology) was due Mon, Oct 19
+- Lab safety form (English) was due Fri, Oct 9
+```
+
+### Example answer for get_whats_new
+The question "What's new since yesterday?" is answered by get_whats_new, which prints one digest with new announcements, new grades, overdue work and what is due next. The times in this sample are in UTC.
+```text
+New announcements (last 7 days)
+- Biology (Wed, Oct 21, 8:00 a.m. UTC) Field trip permission slip due Friday
+- English (Tue, Oct 20, 9:00 a.m. UTC) Bring your textbook
+
+New grades (last 7 days)
+- Midterm review (Calculus) graded 88/100 on Tue, Oct 20, 3:00 p.m. UTC
+
+Overdue work
+- Chapter 3 questions (Biology) was due Mon, Oct 19
+- Lab safety form (English) was due Fri, Oct 9
+
+Due next (14 days)
+- Essay outline (English) due Fri, Oct 23
+- Lab write up (Biology) due Fri, Oct 23, 11:59 p.m. UTC
+- Problem set 4 (Calculus) due Mon, Oct 26
+```
 
 ## Links
 - Source and README, https://github.com/AnonymousOnyx22/google-classroom-student-mcp
