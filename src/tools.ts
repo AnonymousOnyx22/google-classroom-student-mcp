@@ -68,16 +68,22 @@ async function courseWork(api: Api, course: Course): Promise<WorkItem[]> {
   });
 }
 
-async function coursesFor(api: Api, ids?: string[]): Promise<Course[]> {
-  const courses = await activeCourses(api);
-  if (!ids?.length) return courses.slice(0, 15);
-  const byId = new Map(courses.map((c) => [String(c.id), c]));
-  return ids.slice(0, 15).map((id) => byId.get(String(id)) ?? { id: String(id), name: `class ${id}` });
+interface CoursesResult {
+  courses: Course[];
+  total: number;
 }
 
-async function allWork(api: Api, ids?: string[]): Promise<WorkItem[]> {
-  const courses = await coursesFor(api, ids);
-  return (await Promise.all(courses.map((c) => courseWork(api, c)))).flat();
+async function coursesFor(api: Api, ids?: string[]): Promise<CoursesResult> {
+  const courses = await activeCourses(api);
+  if (!ids?.length) return { courses: courses.slice(0, 15), total: courses.length };
+  const byId = new Map(courses.map((c) => [String(c.id), c]));
+  return { courses: ids.slice(0, 15).map((id) => byId.get(String(id)) ?? { id: String(id), name: `class ${id}` }), total: ids.length };
+}
+
+async function allWork(api: Api, ids?: string[]): Promise<{ items: WorkItem[]; totalCourses: number }> {
+  const { courses, total } = await coursesFor(api, ids);
+  const items = (await Promise.all(courses.map((c) => courseWork(api, c)))).flat();
+  return { items, totalCourses: total };
 }
 
 const OPEN = new Set(["NEW", "CREATED", "RECLAIMED_BY_STUDENT"]);
@@ -105,9 +111,12 @@ export const tools: ToolDef<Api>[] = [
     description: "Everything assigned that the student has not turned in yet. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'What do I still have to do?' or 'What's left to turn in across all my classes?'",
     inputSchema: { course_ids: courseIds },
     run: async ({ course_ids }, api) => {
-      const items = (await allWork(api, course_ids)).filter((i) => OPEN.has(i.state));
+      const { items: all, totalCourses } = await allWork(api, course_ids);
+      const items = all.filter((i) => OPEN.has(i.state));
       items.sort((a, b) => (a.due?.getTime() ?? 9e15) - (b.due?.getTime() ?? 9e15));
-      return bullets(items.map((i) => `${i.title} (${i.course}) due ${dueText(i)}`), "Nothing left to turn in.");
+      let text = bullets(items.map((i) => `${i.title} (${i.course}) due ${dueText(i)}`), "Nothing left to turn in.");
+      if (totalCourses > 15) text += `\nshowing first 15 of ${totalCourses} classes`;
+      return text;
     },
   },
   {
@@ -118,11 +127,14 @@ export const tools: ToolDef<Api>[] = [
     run: async ({ course_ids, days_ahead }, api) => {
       const now = Date.now();
       const until = days_ahead == null ? Infinity : now + days_ahead * 86400000;
-      const items = (await allWork(api, course_ids)).filter(
+      const { items: all, totalCourses } = await allWork(api, course_ids);
+      const items = all.filter(
         (i) => OPEN.has(i.state) && i.due && i.due.getTime() >= now && i.due.getTime() <= until,
       );
       items.sort((a, b) => a.due!.getTime() - b.due!.getTime());
-      return bullets(items.map((i) => `${i.title} (${i.course}) due ${dueText(i)}`), "No upcoming due dates.");
+      let text = bullets(items.map((i) => `${i.title} (${i.course}) due ${dueText(i)}`), "No upcoming due dates.");
+      if (totalCourses > 15) text += `\nshowing first 15 of ${totalCourses} classes`;
+      return text;
     },
   },
   {
@@ -132,9 +144,12 @@ export const tools: ToolDef<Api>[] = [
     inputSchema: { course_ids: courseIds },
     run: async ({ course_ids }, api) => {
       const now = Date.now();
-      const items = (await allWork(api, course_ids)).filter((i) => OPEN.has(i.state) && i.due && i.due.getTime() < now);
+      const { items: all, totalCourses } = await allWork(api, course_ids);
+      const items = all.filter((i) => OPEN.has(i.state) && i.due && i.due.getTime() < now);
       items.sort((a, b) => b.due!.getTime() - a.due!.getTime());
-      return bullets(items.map((i) => `${i.title} (${i.course}) was due ${dueText(i)}`), "No missing assignments.");
+      let text = bullets(items.map((i) => `${i.title} (${i.course}) was due ${dueText(i)}`), "No missing assignments.");
+      if (totalCourses > 15) text += `\nshowing first 15 of ${totalCourses} classes`;
+      return text;
     },
   },
   {
@@ -158,7 +173,7 @@ export const tools: ToolDef<Api>[] = [
     description: "Grades on returned work for each class. Google Classroom has no overall grade, so this adds up graded work only. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'How am I doing in my classes?' or 'What grades have I gotten back?'",
     inputSchema: { course_ids: courseIds },
     run: async ({ course_ids }, api) => {
-      const courses = await coursesFor(api, course_ids);
+      const { courses, total } = await coursesFor(api, course_ids);
       const perCourse = await Promise.all(courses.map((c) => courseWork(api, c)));
       const lines: string[] = [];
       for (const [idx, list] of perCourse.entries()) {
@@ -172,7 +187,9 @@ export const tools: ToolDef<Api>[] = [
         const possible = graded.reduce((n, i) => n + (i.maxPoints ?? 0), 0);
         lines.push(`${name} ${earned}/${possible} points on ${graded.length} graded items (${((earned / possible) * 100).toFixed(1)}%)`);
       }
-      return bullets(lines, "No grades found.");
+      let text = bullets(lines, "No grades found.");
+      if (total > 15) text += `\nshowing first 15 of ${total} classes`;
+      return text;
     },
   },
   {
@@ -182,7 +199,9 @@ export const tools: ToolDef<Api>[] = [
     inputSchema: { course_ids: z.array(courseId).optional() },
     run: async ({ course_ids }, api) => {
       const courses = await activeCourses(api);
-      const ids: string[] = (course_ids?.length ? course_ids : courses.map((c) => c.id)).map(String).slice(0, 15);
+      const allIds: string[] = (course_ids?.length ? course_ids : courses.map((c) => c.id)).map(String);
+      const total = allIds.length;
+      const ids: string[] = allIds.slice(0, 15);
       const names = new Map(courses.map((c) => [String(c.id), c.name]));
       const rows = (
         await Promise.all(
@@ -193,10 +212,12 @@ export const tools: ToolDef<Api>[] = [
         )
       ).flat();
       rows.sort((x, y) => String(y.a.updateTime).localeCompare(String(x.a.updateTime)));
-      return bullets(
+      let text = bullets(
         rows.slice(0, 20).map(({ id, a }) => `${names.get(id) ?? `class ${id}`} (${fmtDate(a.updateTime)})\n  ${stripHtml(a.text, 400).replace(/\n/g, " ")}`),
         "No recent announcements.",
       );
+      if (total > 15) text += `\nshowing first 15 of ${total} classes`;
+      return text;
     },
   },
   {
