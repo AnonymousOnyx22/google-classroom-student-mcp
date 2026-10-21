@@ -57,9 +57,9 @@ beforeAll(async () => {
     if (p.startsWith("/v1/courses/403/")) return send(403, {});
     if (p === "/v1/courses/100/courseWork")
       return send(200, { courseWork: [
-        { id: "w1", title: "Worksheet 1", ...dueParts(-3), maxPoints: 10 },
-        { id: "w2", title: "Quiz 2", ...dueParts(2), maxPoints: 20 },
-        { id: "w3", title: "Project", ...dueParts(5, false), maxPoints: 50 },
+        { id: "w1", title: "Worksheet 1", ...dueParts(-3), maxPoints: 10, alternateLink: "https://classroom.google.com/c/Math/course/100/courseWork/w1" },
+        { id: "w2", title: "Quiz 2", ...dueParts(2), maxPoints: 20, alternateLink: "https://classroom.google.com/c/Math/course/100/courseWork/w2" },
+        { id: "w3", title: "Project", ...dueParts(5, false), maxPoints: 50, alternateLink: "https://classroom.google.com/c/Math/course/100/courseWork/w3" },
         { id: "w4", title: "Reading", maxPoints: 5, updateTime: new Date(Date.now() - 2 * day).toISOString() },
       ] });
     if (p === "/v1/courses/100/courseWork/-/studentSubmissions")
@@ -70,19 +70,29 @@ beforeAll(async () => {
         { courseWorkId: "w4", state: "RETURNED", assignedGrade: 4 },
       ] });
     if (p === "/v1/courses/200/courseWork") return send(200, { courseWork: [
-      { id: "e1", title: "Essay", ...dueParts(-10), maxPoints: 100, updateTime: new Date(Date.now() - 30 * day).toISOString() },
-      { id: "e2", title: "Outline", ...dueParts(7), maxPoints: 25 },
+      { id: "e1", title: "Essay", ...dueParts(-10), maxPoints: 100, updateTime: new Date(Date.now() - 30 * day).toISOString(), alternateLink: "https://classroom.google.com/c/English/course/200/courseWork/e1" },
+      { id: "e2", title: "Outline", ...dueParts(7), maxPoints: 25, alternateLink: "https://classroom.google.com/c/English/course/200/courseWork/e2" },
     ] });
     if (p === "/v1/courses/200/courseWork/-/studentSubmissions") return send(200, { studentSubmissions: [{ courseWorkId: "e1", state: "RETURNED", assignedGrade: 90 }] });
     if (p === "/v1/courses/300/courseWork" || p === "/v1/courses/300/courseWork/-/studentSubmissions") return send(200, {});
     if (p.endsWith("/announcements")) {
       if (!p.includes("/100/")) return send(200, { announcements: [] });
       return send(200, { announcements: [
-        { text: "Bring your textbook", updateTime: new Date(Date.now() - 2 * day).toISOString() },
+        { text: "Bring your textbook", alternateLink: "https://classroom.google.com/c/Math/course/100/announcements/a1", updateTime: new Date(Date.now() - 2 * day).toISOString() },
         { text: "Test <b>Friday</b>", updateTime: new Date(Date.now() - 30 * day).toISOString() },
       ] });
     }
-    if (p === "/v1/courses/100/courseWorkMaterials") return send(200, { courseWorkMaterial: [{ title: "Slides week 3", description: "Chapter 3" }] });
+    if (p === "/v1/courses/100/courseWorkMaterials") return send(200, { courseWorkMaterial: [
+      {
+        title: "Slides week 3",
+        description: "Chapter 3",
+        alternateLink: "https://classroom.google.com/c/Math/course/100/courseWorkMaterials/m1",
+        materials: [
+          { title: "Slides week 3", driveFile: { driveFile: { title: "Week 3 slides", alternateLink: "https://drive.google.com/file/d/abc123" } } },
+          { title: "Handout", driveFile: { title: "Chapter 3 handout", alternateLink: "https://drive.google.com/file/d/def456" } },
+        ],
+      },
+    ] });
     send(404, {});
   });
   await new Promise<void>((r) => srv.listen(0, "127.0.0.1", r));
@@ -182,6 +192,34 @@ describe("google-classroom-student-mcp", () => {
     expect(ann).toContain("Test Friday");
     expect(ann).not.toContain("<b>");
     expect((await call(c, "get_course_materials", { course_id: "100" })).text).toContain("Slides week 3");
+  });
+
+  it("prints the web page of each assignment, announcement and material", async () => {
+    const c = await connect();
+    const todo = (await call(c, "get_todo")).text;
+    expect(todo).toContain("link: https://classroom.google.com/c/Math/course/100/courseWork/w1");
+    const assignments = (await call(c, "get_assignments", { course_id: "100" })).text;
+    expect(assignments).toContain("link: https://classroom.google.com/c/Math/course/100/courseWork/w2");
+    const announcements = (await call(c, "get_announcements")).text;
+    expect(announcements).toContain("link: https://classroom.google.com/c/Math/course/100/announcements/a1");
+    const materials = (await call(c, "get_course_materials", { course_id: "100" })).text;
+    expect(materials).toContain("link: https://classroom.google.com/c/Math/course/100/courseWorkMaterials/m1");
+  });
+
+  it("prints the Drive link of every file attached to a material", async () => {
+    const { text } = await call(await connect(), "get_course_materials", { course_id: "100" });
+    expect(text).toContain("file: Week 3 slides, https://drive.google.com/file/d/abc123");
+    expect(text).toContain("file: Chapter 3 handout, https://drive.google.com/file/d/def456");
+  });
+
+  it("leaves the link line out when the API sends no link", async () => {
+    const c = await connect();
+    const assignments = (await call(c, "get_assignments", { course_id: "100" })).text;
+    expect(assignments).toContain("Reading");
+    expect(assignments).not.toContain("courseWork/w4");
+    const announcements = (await call(c, "get_announcements")).text;
+    expect(announcements).toContain("Test Friday");
+    expect(announcements).not.toContain("announcements/a2");
   });
 
   it("bundles new announcements, new grades, overdue work and what is due next", async () => {

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- get_todo, get_assignments, get_announcements and get_course_materials now print the Classroom page of each item under the title, so the AI can hand the student a direct link to the work instead of only a title.
+- get_course_materials also prints the Drive link of every file attached to a material.
+- Added tests that check the links show up, that the Drive link of an attached file shows up and that no link line is printed when the API sends none.
 - The README now has a Google Classroom vs Brightspace MCP section. It compares what each server reads, how the setup differs, what your school has to do, and that both are read only.
 - Added a test that keeps the comparison section in place and checks it still says what this server really reads.
 - Added get_whats_new, a catch up digest that prints new announcements, newly graded work, overdue work and what is due next in one answer. It takes an optional course_ids list, an optional since_days number for how far back to look and an optional days_ahead number for how far ahead to look.

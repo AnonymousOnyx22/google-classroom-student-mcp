@@ -140,6 +140,8 @@ All tools are read only.
 
 The same list is in plain text in [llms.txt](./llms.txt), one line per tool with its description and the optional arguments it takes. That file ships with the package, so site indexes and AI apps that read plain text files can pick it up.
 
+get_todo, get_assignments, get_announcements and get_course_materials print the Classroom page of each item under the title, so the AI can hand the student a direct link to the work. get_course_materials also prints the Drive link of every file attached to a material. Classroom sends a link only for published items.
+
 Google Classroom has no overall course grade, so `get_my_grades` adds up graded work only and says so.
 
 `get_todo`, `get_upcoming_due_dates`, `get_missing_assignments`, `get_my_grades` and `get_whats_new` accept an optional list of course IDs (`course_ids`), so you can ask about a few classes only instead of all of them. `get_upcoming_due_dates` and `get_whats_new` also accept an optional number of days to look ahead (`days_ahead`). `get_whats_new` also accepts an optional number of days to look back (`since_days`), which defaults to 7 days. `get_announcements` accepts course IDs (`course_ids`) too.
@@ -157,10 +159,10 @@ Google Classroom and D2L Brightspace are different platforms, so they need diffe
 | Sign in | You make your own OAuth app in the Google Cloud console, run one time sign in, then paste the client ID, the client secret and the refresh token | You pick your school and sign in with your own school account in a browser window. Any sign in method your school uses works, and your password is never stored |
 | After setup | While your Cloud app is in testing mode, Google expires the refresh token every 7 days, so you run the login command again now and then | It stays signed in quietly, and a browser window only opens when your school asks you to sign in again |
 | What your school has to do | Nothing. Your own Google account and your own Cloud project are enough, though a school admin can block third party apps | Nothing. It uses your own student sign in, so no API key from an administrator is needed |
-| Classes and work | Active classes, then every assignment with its due date, its points and whether you turned it in | Enrolled courses, then assignments and quizzes with the real submission status of each one |
+| Classes and work | Active classes, then every assignment with its due date, its points, whether you turned it in and a link to open it in Classroom | Enrolled courses, then assignments and quizzes with the real submission status of each one |
 | Grades | Points earned on returned work, added up per class. Google Classroom has no overall grade, so there is no overall percentage | Grade breakdown per course with points, percentages and instructor comments, plus a target grade tool that tells you what you need on the work that is left |
 | News | Recent announcements, and a catch up digest with new announcements, new grades, overdue work and what is due next | Recent announcements, and a catch up digest that also covers newly marked work, unread discussions and quizzes you have not tried yet |
-| Course files | Materials posted in a class | Course modules, files, links, the syllabus, the files attached to an assignment, discussions, class lists and calendar events such as exams and labs. It can also save a course file to a folder you pick and build a calendar file of your deadlines |
+| Course files | Materials posted in a class, each with a link to open it and the Drive link of every attached file | Course modules, files, links, the syllabus, the files attached to an assignment, discussions, class lists and calendar events such as exams and labs. It can also save a course file to a folder you pick and build a calendar file of your deadlines |
 | Read only | Yes, it can never turn in, edit or delete anything | Yes, it only reads from Brightspace |
 | Price and license | Free forever, open source, MIT license | Open source, MIT license, and it runs on your own computer |
 

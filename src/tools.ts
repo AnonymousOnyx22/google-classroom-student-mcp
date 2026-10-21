@@ -28,6 +28,8 @@ interface WorkItem {
   late?: boolean;
   /** When the teacher gave the work back with a grade. */
   gradedAt?: Date;
+  /** The page of this assignment in the Classroom web UI. */
+  link?: string;
 }
 
 async function activeCourses(api: Api): Promise<Course[]> {
@@ -89,6 +91,7 @@ async function courseWork(api: Api, course: Course): Promise<WorkItem[]> {
       grade: s?.assignedGrade,
       late: s?.late,
       gradedAt: gradedAt(w, s),
+      link: w.alternateLink,
     };
   });
 }
@@ -112,6 +115,30 @@ async function allWork(api: Api, ids?: string[]): Promise<{ items: WorkItem[]; t
 }
 
 const OPEN = new Set(["NEW", "CREATED", "RECLAIMED_BY_STUDENT"]);
+
+/**
+ * Put the web page of an item under its text, so the student can open the
+ * work itself and not only read the title. Classroom only sends the link
+ * for published items.
+ */
+function linked(text: string, url?: string): string {
+  return url ? `${text}\n  link: ${url}` : text;
+}
+
+/**
+ * The Drive files attached to a material, one line each with the link that
+ * opens the file. The Classroom API nests the file inside the shared file
+ * record, and older records hold it one level higher.
+ */
+function driveFiles(material: any): string[] {
+  const out: string[] = [];
+  for (const m of material?.materials ?? []) {
+    const file = m?.driveFile?.driveFile ?? m?.driveFile;
+    if (!file?.alternateLink) continue;
+    out.push(`  file: ${file.title ? `${file.title}, ` : ""}${file.alternateLink}`);
+  }
+  return out;
+}
 
 /** A titled part of the digest, with one bullet per line. */
 function section(title: string, lines: string[], empty: string): string {
@@ -138,13 +165,13 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_todo",
     title: "To-do list",
-    description: "Everything assigned that the student has not turned in yet. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'What do I still have to do?' or 'What's left to turn in across all my classes?'",
+    description: "Everything assigned that the student has not turned in yet, each with a link to open it in Classroom. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'What do I still have to do?' or 'What's left to turn in across all my classes?'",
     inputSchema: { course_ids: courseIds },
     run: async ({ course_ids }, api) => {
       const { items: all, totalCourses } = await allWork(api, course_ids);
       const items = all.filter((i) => OPEN.has(i.state));
       items.sort((a, b) => (a.due?.getTime() ?? 9e15) - (b.due?.getTime() ?? 9e15));
-      let text = bullets(items.map((i) => `${i.title} (${i.course}) due ${dueText(i)}`), "Nothing left to turn in.");
+      let text = bullets(items.map((i) => linked(`${i.title} (${i.course}) due ${dueText(i)}`, i.link)), "Nothing left to turn in.");
       if (totalCourses > 15) text += `\nshowing first 15 of ${totalCourses} classes`;
       return text;
     },
@@ -185,14 +212,14 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_assignments",
     title: "Class assignments",
-    description: "Assignments for one class with due dates and status. Use this when the user asks 'What's due in this class?' or wants every assignment and its points for a single class.",
+    description: "Assignments for one class with due dates and status, each with a link to open it in Classroom. Use this when the user asks 'What's due in this class?' or wants every assignment and its points for a single class.",
     inputSchema: { course_id: courseId },
     run: async ({ course_id }, api) => {
       const course = (await activeCourses(api)).find((c) => String(c.id) === String(course_id)) ?? { id: String(course_id), name: `class ${course_id}` };
       const items = await courseWork(api, course);
       items.sort((a, b) => (a.due?.getTime() ?? 9e15) - (b.due?.getTime() ?? 9e15));
       return bullets(
-        items.map((i) => `${i.title} due ${dueText(i)}${i.maxPoints ? ` (${i.maxPoints} pts)` : ""} ${statusOf(i)}`),
+        items.map((i) => linked(`${i.title} due ${dueText(i)}${i.maxPoints ? ` (${i.maxPoints} pts)` : ""} ${statusOf(i)}`, i.link)),
         "No assignments found.",
       );
     },
@@ -225,7 +252,7 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_announcements",
     title: "Announcements",
-    description: "Recent announcements. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'Did my teacher post anything new?' or 'What did my teacher announce?'",
+    description: "Recent announcements, each with a link to open it in Classroom. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'Did my teacher post anything new?' or 'What did my teacher announce?'",
     inputSchema: { course_ids: z.array(courseId).optional() },
     run: async ({ course_ids }, api) => {
       const courses = await activeCourses(api);
@@ -243,7 +270,9 @@ export const tools: ToolDef<Api>[] = [
       ).flat();
       rows.sort((x, y) => String(y.a.updateTime).localeCompare(String(x.a.updateTime)));
       let text = bullets(
-        rows.slice(0, 20).map(({ id, a }) => `${names.get(id) ?? `class ${id}`} (${fmtDate(a.updateTime)})\n  ${stripHtml(a.text, 400).replace(/\n/g, " ")}`),
+        rows.slice(0, 20).map(({ id, a }) =>
+          linked(`${names.get(id) ?? `class ${id}`} (${fmtDate(a.updateTime)})\n  ${stripHtml(a.text, 400).replace(/\n/g, " ")}`, a.alternateLink),
+        ),
         "No recent announcements.",
       );
       if (total > 15) text += `\nshowing first 15 of ${total} classes`;
@@ -253,12 +282,17 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_course_materials",
     title: "Class materials",
-    description: "Posted materials for one class. Use this when the user asks 'What materials did my teacher post?' or wants the readings, slides and handouts for one class.",
+    description: "Posted materials for one class, each with a link to open it in Classroom and the Drive link of every attached file. Use this when the user asks 'What materials did my teacher post?' or wants the readings, slides and handouts for one class.",
     inputSchema: { course_id: courseId },
     run: async ({ course_id }, api) => {
       const items = await api.list<any>(`/v1/courses/${course_id}/courseWorkMaterials`, "courseWorkMaterial", { courseWorkMaterialStates: "PUBLISHED" });
       return bullets(
-        items.map((m) => `${m.title}${m.description ? `, ${stripHtml(m.description, 160).replace(/\n/g, " ")}` : ""}`),
+        items.map((m) =>
+          [
+            linked(`${m.title}${m.description ? `, ${stripHtml(m.description, 160).replace(/\n/g, " ")}` : ""}`, m.alternateLink),
+            ...driveFiles(m),
+          ].join("\n"),
+        ),
         "No materials posted.",
       );
     },
