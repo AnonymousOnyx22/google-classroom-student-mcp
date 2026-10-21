@@ -123,6 +123,8 @@ All tools are read only.
 | `get_announcements` | Recent announcements |
 | `get_course_materials` | Materials posted in a class |
 
+The same list is in plain text in [llms.txt](./llms.txt), one line per tool with its description and the optional arguments it takes. That file ships with the package, so site indexes and AI apps that read plain text files can pick it up.
+
 Google Classroom has no overall course grade, so `get_my_grades` adds up graded work only and says so.
 
 `get_todo`, `get_upcoming_due_dates`, `get_missing_assignments` and `get_my_grades` accept an optional list of course IDs (`course_ids`), so you can ask about a few classes only instead of all of them. `get_upcoming_due_dates` also accepts an optional number of days to look ahead (`days_ahead`). `get_announcements` accepts course IDs (`course_ids`) too.
@@ -152,7 +154,7 @@ npm run build
 npm test
 ```
 
-Tests run against a fake Google server, so they need no account or network. One test also checks that llms.txt and glama.json still list every tool with the same description.
+Tests run against a fake Google server, so they need no account or network. One test also checks that [llms.txt](./llms.txt) and glama.json still list every tool with the same description.
 
 The test runner needs Node 22.12 or newer. The server itself runs on Node 20 or newer.
 

@@ -11,6 +11,9 @@ const NOTED_PARAMS = ["course_ids", "days_ahead"];
 /** One tool line in llms.txt, for example "- get_todo: What is left to turn in." */
 const TOOL_LINE = /^- ([a-z0-9_]+): (.*)$/;
 
+/** A markdown link to llms.txt in the README, for example "[llms.txt](./llms.txt)". */
+const LLMS_LINK = /\]\(\s*\.?\/?llms\.txt\s*\)/;
+
 function readRootFile(name: string): string {
   return readFileSync(new URL(`../${name}`, import.meta.url), "utf8");
 }
@@ -121,5 +124,11 @@ describe("llms.txt and glama.json stay in lockstep with the tool definitions", (
     for (const param of NOTED_PARAMS) {
       expect(notedToolsIn(readmeNote(), param).sort(), `README note about ${param}`).toEqual(toolsWithParam(param).sort());
     }
+  });
+});
+
+describe("the README points at llms.txt", () => {
+  it("has a link to llms.txt so site indexes find the plain text tool list", () => {
+    expect(readRootFile("README.md")).toMatch(LLMS_LINK);
   });
 });

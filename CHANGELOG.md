@@ -32,6 +32,7 @@
 - Added a test that keeps llms.txt and glama.json in step with the tool list and the tool descriptions.
 - Every tool description now ends with a real example ask, such as 'What's overdue?' or 'What's due this week across all my classes?', so it is clearer which tool fits the question.
 - Added a test that checks every tool description carries at least one example ask.
+- The README now links to llms.txt, so site indexes and AI apps that read the README find the plain text tool list.
 
 ## 0.1.1
 
