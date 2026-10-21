@@ -125,7 +125,7 @@ All tools are read only.
 
 Google Classroom has no overall course grade, so `get_my_grades` adds up graded work only and says so.
 
-`get_todo`, `get_upcoming_due_dates`, `get_missing_assignments` and `get_my_grades` accept an optional list of course IDs, so you can ask about a few classes only instead of all of them. `get_upcoming_due_dates` also accepts an optional number of days to look ahead. `get_announcements` accepts course IDs too.
+`get_todo`, `get_upcoming_due_dates`, `get_missing_assignments` and `get_my_grades` accept an optional list of course IDs (`course_ids`), so you can ask about a few classes only instead of all of them. `get_upcoming_due_dates` also accepts an optional number of days to look ahead (`days_ahead`). `get_announcements` accepts course IDs (`course_ids`) too.
 
 ## Privacy and security
 

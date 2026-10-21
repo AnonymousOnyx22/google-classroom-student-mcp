@@ -45,18 +45,32 @@ function llmsNote(): string {
     .join("\n");
 }
 
+/** The prose under the tool table in README.md, where the optional arguments are described. */
+function readmeNote(): string {
+  return toolsSection("README.md")
+    .split("\n")
+    .filter((line) => !line.trim().startsWith("|"))
+    .filter((line) => !line.trim().startsWith("#"))
+    .join("\n");
+}
+
 function namesIn(text: string): string[] {
   return expectedNames.filter((name) => new RegExp(`\\b${name}\\b`).test(text));
 }
 
-/** Tools the llms.txt note says take the given optional argument. */
-function notedTools(param: string): string[] {
+/** Tools a note says take the given optional argument. */
+function notedToolsIn(note: string, param: string): string[] {
   const claims = new Set<string>();
-  for (const sentence of llmsNote().split(/(?<=[.!?])\s+/)) {
+  for (const sentence of note.split(/(?<=[.!?])\s+/)) {
     if (!sentence.includes(param)) continue;
     for (const name of namesIn(sentence)) claims.add(name);
   }
   return [...claims];
+}
+
+/** Tools the llms.txt note says take the given optional argument. */
+function notedTools(param: string): string[] {
+  return notedToolsIn(llmsNote(), param);
 }
 
 /** Tools that really take the given argument. */
@@ -100,6 +114,12 @@ describe("llms.txt and glama.json stay in lockstep with the tool definitions", (
   it("names the right tools for the optional arguments in the llms.txt note", () => {
     for (const param of NOTED_PARAMS) {
       expect(notedTools(param).sort(), `llms.txt note about ${param}`).toEqual(toolsWithParam(param).sort());
+    }
+  });
+
+  it("names the right tools for the optional arguments in the README", () => {
+    for (const param of NOTED_PARAMS) {
+      expect(notedToolsIn(readmeNote(), param).sort(), `README note about ${param}`).toEqual(toolsWithParam(param).sort());
     }
   });
 });
