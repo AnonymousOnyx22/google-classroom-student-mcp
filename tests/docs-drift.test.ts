@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { tools } from "../src/tools.js";
 
@@ -130,5 +130,81 @@ describe("llms.txt and glama.json stay in lockstep with the tool definitions", (
 describe("the README points at llms.txt", () => {
   it("has a link to llms.txt so site indexes find the plain text tool list", () => {
     expect(readRootFile("README.md")).toMatch(LLMS_LINK);
+  });
+});
+
+/** One line of the sample answer, for example "- Essay outline (English) due Fri, Oct 23". */
+const SAMPLE_LINE = /^- .+ \(.+\) due .+$/;
+
+/** The heading of the sample answer section in the README and in llms.txt. */
+const SAMPLE_HEADING = /^#+ (Sample|Example) answer$/;
+
+/** A fixed clock, so the sample answer does not move with the day. */
+const FIXED_NOW = new Date("2026-10-21T12:00:00Z");
+
+/** The sample answer lines that follow the sample heading in a file. */
+function sampleLines(file: string): string[] {
+  const lines = readRootFile(file)
+    .split("\n")
+    .map((l) => (l.endsWith("\r") ? l.slice(0, -1) : l));
+  const start = lines.findIndex((l) => SAMPLE_HEADING.test(l));
+  expect(start, `${file} has no sample answer section`).toBeGreaterThan(-1);
+  const out: string[] = [];
+  for (const line of lines.slice(start + 1)) {
+    if (/^#+ /.test(line)) break;
+    if (SAMPLE_LINE.test(line)) out.push(line);
+  }
+  return out;
+}
+
+/** A stand in Classroom API that returns the given course work, so the sample can be checked against real tool output. */
+function stubApi(work: any[]): any {
+  return {
+    get: async () => ({}),
+    list: async (path: string) => {
+      if (path === "/v1/courses") return [{ id: "1", name: "English" }];
+      if (path.endsWith("/studentSubmissions")) return [];
+      return work;
+    },
+  };
+}
+
+describe("the sample answer matches what the tool prints", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("puts the sample answer under the example asks in the README first screen", () => {
+    const readme = readRootFile("README.md");
+    const ask = readme.indexOf('- "What\'s due this week across all my classes?"');
+    expect(ask).toBeGreaterThan(-1);
+    const heading = readme.search(/^#+ Sample answer$/m);
+    expect(heading).toBeGreaterThan(ask);
+    expect(heading).toBeLessThan(readme.indexOf("\n## ", ask));
+  });
+
+  it("prints the sample lines the way get_upcoming_due_dates prints them", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(FIXED_NOW);
+    const tool = tools.find((t) => t.name === "get_upcoming_due_dates")!;
+    const noTime = await tool.run(
+      {},
+      stubApi([{ id: "w1", title: "Essay outline", dueDate: { year: 2026, month: 10, day: 23 } }]),
+    );
+    expect(noTime).toBe("- Essay outline (English) due Fri, Oct 23");
+    const withTime = await tool.run(
+      {},
+      stubApi([
+        { id: "w2", title: "Lab write up", dueDate: { year: 2026, month: 10, day: 23 }, dueTime: { hours: 23, minutes: 59 } },
+      ]),
+    );
+    expect(withTime).toMatch(/^- Lab write up \(English\) due .+, \d{1,2}:\d{2} [ap]\.m\. \w+$/);
+  });
+
+  it("shows the same sample lines in the README and in llms.txt", () => {
+    const lines = sampleLines("README.md");
+    expect(lines.length).toBeGreaterThanOrEqual(3);
+    expect(lines[0]).toBe("- Essay outline (English) due Fri, Oct 23");
+    expect(sampleLines("llms.txt")).toEqual(lines);
   });
 });

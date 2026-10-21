@@ -17,6 +17,18 @@ Ask these right after setup:
 - "What's overdue?"
 - "What's due this week across all my classes?"
 
+### Sample answer
+
+The third question goes to `get_upcoming_due_dates`. It reads your classes and prints one line per assignment, soonest first. Here is what an answer looks like:
+
+```text
+- Essay outline (English) due Fri, Oct 23
+- Lab write up (Biology) due Fri, Oct 23, 11:59 p.m. UTC
+- Problem set 4 (Calculus) due Mon, Oct 26
+```
+
+Every line has the assignment title, the class and the due date. Work you already turned in is left out. Pass `days_ahead` set to 7 to that tool for a week ahead. Classroom keeps due times in UTC, and the server prints them in your own time zone.
+
 ## Quick start with npx
 
 Install the Google Classroom MCP server with npx, then add it to your AI app. Pick your app below.

@@ -15,6 +15,8 @@
 - Every tool description now ends with a real example ask, such as 'What's overdue?' or 'What's due this week across all my classes?', so it is clearer which tool fits the question.
 - Added a test that checks every tool description carries at least one example ask.
 - The README now links to llms.txt, so site indexes and AI apps that read the README find the plain text tool list.
+- The README first screen now shows a sample answer for "What's due this week across all my classes?", and llms.txt carries the same sample.
+- Added a test that checks the sample answer lines match the output of get_upcoming_due_dates.
 
 ## 0.1.4
 

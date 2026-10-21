@@ -19,6 +19,14 @@
 
 get_todo, get_upcoming_due_dates, get_missing_assignments and get_my_grades take an optional course_ids list to check specific classes only. get_upcoming_due_dates also takes an optional days_ahead number. get_announcements takes optional course_ids too.
 
+## Example answer
+The question "What's due this week across all my classes?" is answered by get_upcoming_due_dates, which prints one line per assignment, soonest first:
+- Essay outline (English) due Fri, Oct 23
+- Lab write up (Biology) due Fri, Oct 23, 11:59 p.m. UTC
+- Problem set 4 (Calculus) due Mon, Oct 26
+
+Every line has the assignment title, the class and the due date. Work you already turned in is left out. Classroom keeps due times in UTC, and the server prints them in your own time zone.
+
 ## Links
 - Source and README, https://github.com/AnonymousOnyx22/google-classroom-student-mcp
 - More free student MCP servers, https://brightspacemcp.com/more-mcps/
