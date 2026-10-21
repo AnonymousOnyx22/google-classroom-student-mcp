@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added get_whats_new, a catch up digest that prints new announcements, newly graded work, overdue work and what is due next in one answer. It takes an optional course_ids list, an optional since_days number for how far back to look and an optional days_ahead number for how far ahead to look.
 - The version now comes from package.json, so `--version` and the MCP handshake always report the version of the published package. The stale copy in src/server.ts is gone.
 - Updated the dependencies. The MCP SDK stays on 1.32.1, which is the newest release, and the test runner moved from vitest 2 to vitest 5.
 - The test runner needs Node 22.12 or newer. The server itself still runs on Node 20 or newer.

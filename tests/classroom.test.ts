@@ -60,7 +60,7 @@ beforeAll(async () => {
         { id: "w1", title: "Worksheet 1", ...dueParts(-3), maxPoints: 10 },
         { id: "w2", title: "Quiz 2", ...dueParts(2), maxPoints: 20 },
         { id: "w3", title: "Project", ...dueParts(5, false), maxPoints: 50 },
-        { id: "w4", title: "Reading", maxPoints: 5 },
+        { id: "w4", title: "Reading", maxPoints: 5, updateTime: new Date(Date.now() - 2 * day).toISOString() },
       ] });
     if (p === "/v1/courses/100/courseWork/-/studentSubmissions")
       return send(200, { studentSubmissions: [
@@ -69,11 +69,19 @@ beforeAll(async () => {
         { courseWorkId: "w3", state: "CREATED" },
         { courseWorkId: "w4", state: "RETURNED", assignedGrade: 4 },
       ] });
-    if (p === "/v1/courses/200/courseWork") return send(200, { courseWork: [{ id: "e1", title: "Essay", ...dueParts(-10), maxPoints: 100 }, { id: "e2", title: "Outline", ...dueParts(7), maxPoints: 25 }] });
+    if (p === "/v1/courses/200/courseWork") return send(200, { courseWork: [
+      { id: "e1", title: "Essay", ...dueParts(-10), maxPoints: 100, updateTime: new Date(Date.now() - 30 * day).toISOString() },
+      { id: "e2", title: "Outline", ...dueParts(7), maxPoints: 25 },
+    ] });
     if (p === "/v1/courses/200/courseWork/-/studentSubmissions") return send(200, { studentSubmissions: [{ courseWorkId: "e1", state: "RETURNED", assignedGrade: 90 }] });
     if (p === "/v1/courses/300/courseWork" || p === "/v1/courses/300/courseWork/-/studentSubmissions") return send(200, {});
-    if (p.endsWith("/announcements"))
-      return send(200, { announcements: p.includes("/100/") ? [{ text: "Test <b>Friday</b>", updateTime: "2026-10-12T10:00:00Z" }] : [] });
+    if (p.endsWith("/announcements")) {
+      if (!p.includes("/100/")) return send(200, { announcements: [] });
+      return send(200, { announcements: [
+        { text: "Bring your textbook", updateTime: new Date(Date.now() - 2 * day).toISOString() },
+        { text: "Test <b>Friday</b>", updateTime: new Date(Date.now() - 30 * day).toISOString() },
+      ] });
+    }
     if (p === "/v1/courses/100/courseWorkMaterials") return send(200, { courseWorkMaterial: [{ title: "Slides week 3", description: "Chapter 3" }] });
     send(404, {});
   });
@@ -100,7 +108,7 @@ async function call(client: Client, name: string, args: Record<string, unknown> 
 describe("google-classroom-student-mcp", () => {
   it("exposes only read-only tools", async () => {
     const { tools } = await (await connect()).listTools();
-    expect(tools.length).toBe(8);
+    expect(tools.length).toBe(9);
     for (const t of tools) expect(t.annotations?.readOnlyHint).toBe(true);
   });
 
@@ -174,6 +182,34 @@ describe("google-classroom-student-mcp", () => {
     expect(ann).toContain("Test Friday");
     expect(ann).not.toContain("<b>");
     expect((await call(c, "get_course_materials", { course_id: "100" })).text).toContain("Slides week 3");
+  });
+
+  it("bundles new announcements, new grades, overdue work and what is due next", async () => {
+    const { text } = await call(await connect(), "get_whats_new");
+    expect(text).toContain("New announcements");
+    expect(text).toContain("Bring your textbook");
+    expect(text).not.toContain("Test Friday");
+    expect(text).toContain("New grades");
+    expect(text).toMatch(/Reading \(Math\) graded 4\/5 on /);
+    expect(text).not.toContain("Essay");
+    expect(text).toContain("Overdue work");
+    expect(text).toMatch(/Worksheet 1 \(Math\) was due /);
+    expect(text).toContain("Due next");
+    expect(text).toMatch(/Project \(Math\) due /);
+    expect(text).toMatch(/Outline \(English\) due /);
+    expect(text).not.toContain("Quiz 2");
+  });
+
+  it("takes the window and the class list for the digest", async () => {
+    const c = await connect();
+    const wide = (await call(c, "get_whats_new", { since_days: 60 })).text;
+    expect(wide).toContain("Test Friday");
+    const narrow = (await call(c, "get_whats_new", { days_ahead: 1 })).text;
+    expect(narrow).not.toContain("Project");
+    expect(narrow).toContain("Nothing due in that time.");
+    const one = (await call(c, "get_whats_new", { course_ids: ["200"] })).text;
+    expect(one).toContain("Outline");
+    expect(one).not.toContain("Math");
   });
 
   it("returns a friendly error when the token is rejected", async () => {

@@ -35,6 +35,10 @@
     {
       "name": "get_course_materials",
       "description": "Posted materials for one class. Use this when the user asks 'What materials did my teacher post?' or wants the readings, slides and handouts for one class."
+    },
+    {
+      "name": "get_whats_new",
+      "description": "One catch up digest for every class: new announcements, newly graded work, overdue work and what is due next. Pass course_ids to limit it, since_days for how far back to look and days_ahead for how far ahead to look. Use this when the user asks 'What's new since yesterday?' or 'What changed in my classes?'"
     }
   ]
 }

@@ -5,7 +5,7 @@
 
 Ask your AI what's actually left to do in Google Classroom.
 
-This is the Google Classroom MCP server: a free, open source [MCP](https://modelcontextprotocol.io) server that lets Claude, ChatGPT, Cursor and other AI apps read your Classroom classes, assignments, due dates, missing work, grades on returned work, announcements and course materials. It is **read only**. It can never turn in, edit or delete anything. Not affiliated with Google.
+This is the Google Classroom MCP server: a free, open source [MCP](https://modelcontextprotocol.io) server that lets Claude, ChatGPT, Cursor and other AI apps read your Classroom classes, assignments, due dates, missing work, grades on returned work, announcements, course materials and a catch up digest. It is **read only**. It can never turn in, edit or delete anything. Not affiliated with Google.
 
 Free forever. No sign up and no subscription. Your login details only ever go to Google.
 
@@ -16,6 +16,7 @@ Ask these right after setup:
 - "What do I still need to turn in?"
 - "What's overdue?"
 - "What's due this week across all my classes?"
+- "What's new since yesterday?"
 
 ### Sample answer
 
@@ -119,6 +120,7 @@ Run `npx google-classroom-student-mcp doctor` any time to check that your setup 
 - "What's overdue?"
 - "What's due this week across all my classes?"
 - "What did my teachers post lately?"
+- "What's new since yesterday?"
 
 ## Tools
 
@@ -134,12 +136,15 @@ All tools are read only.
 | `get_my_grades` | Points earned on returned work for each class |
 | `get_announcements` | Recent announcements |
 | `get_course_materials` | Materials posted in a class |
+| `get_whats_new` | One catch up digest: new announcements, new grades, overdue work and what is due next |
 
 The same list is in plain text in [llms.txt](./llms.txt), one line per tool with its description and the optional arguments it takes. That file ships with the package, so site indexes and AI apps that read plain text files can pick it up.
 
 Google Classroom has no overall course grade, so `get_my_grades` adds up graded work only and says so.
 
-`get_todo`, `get_upcoming_due_dates`, `get_missing_assignments` and `get_my_grades` accept an optional list of course IDs (`course_ids`), so you can ask about a few classes only instead of all of them. `get_upcoming_due_dates` also accepts an optional number of days to look ahead (`days_ahead`). `get_announcements` accepts course IDs (`course_ids`) too.
+`get_todo`, `get_upcoming_due_dates`, `get_missing_assignments`, `get_my_grades` and `get_whats_new` accept an optional list of course IDs (`course_ids`), so you can ask about a few classes only instead of all of them. `get_upcoming_due_dates` and `get_whats_new` also accept an optional number of days to look ahead (`days_ahead`). `get_whats_new` also accepts an optional number of days to look back (`since_days`), which defaults to 7 days. `get_announcements` accepts course IDs (`course_ids`) too.
+
+`get_whats_new` is the catch up digest. It prints new announcements, new grades, overdue work and what is due next in one answer. An announcement counts as new when it was posted or changed inside the window. The date of a new grade comes from the teacher's comment on the work when there is one, otherwise from the last change to the assignment.
 
 ## Privacy and security
 

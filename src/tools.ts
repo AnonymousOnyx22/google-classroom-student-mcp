@@ -7,6 +7,8 @@ type Api = ClassroomApi;
 const courseId = z.union([z.string(), z.number()]).describe("Classroom course ID. Use get_my_courses to find it.");
 const courseIds = z.array(courseId).optional().describe("Classroom course IDs to check. Leave empty for all active classes.");
 const daysAhead = z.number().int().positive().optional().describe("Only show work due within this many days from now. Leave empty for every future due date.");
+const sinceDays = z.number().int().positive().optional().describe("How many days back to look for new announcements and new grades. Leave empty for the last 7 days.");
+const dueAhead = z.number().int().positive().optional().describe("How many days ahead to look for work that is due next. Leave empty for the next 14 days.");
 
 interface Course {
   id: string;
@@ -24,6 +26,8 @@ interface WorkItem {
   maxPoints?: number;
   grade?: number;
   late?: boolean;
+  /** When the teacher gave the work back with a grade. */
+  gradedAt?: Date;
 }
 
 async function activeCourses(api: Api): Promise<Course[]> {
@@ -45,6 +49,26 @@ function dueText(i: { due: Date | null; dueHasTime: boolean }): string {
   return i.due.toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
 }
 
+/** Parse a Classroom timestamp, or return undefined when there is none. */
+function stampOf(value: unknown): Date | undefined {
+  if (!value) return undefined;
+  const d = new Date(String(value));
+  return Number.isNaN(d.getTime()) ? undefined : d;
+}
+
+/**
+ * When the work was given back with a grade. The comment the teacher left
+ * says when they returned it. Without a comment, the last change to the
+ * assignment is the best date we have.
+ */
+function gradedAt(work: any, submission: any): Date | undefined {
+  return stampOf(submission?.assignedComment?.creationTime) ?? stampOf(work?.updateTime);
+}
+
+async function courseAnnouncements(api: Api, course: Course): Promise<any[]> {
+  return api.list<any>(`/v1/courses/${course.id}/announcements`, "announcements", { announcementStates: "PUBLISHED" }, 1);
+}
+
 async function courseWork(api: Api, course: Course): Promise<WorkItem[]> {
   const [work, subs] = await Promise.all([
     api.list<any>(`/v1/courses/${course.id}/courseWork`, "courseWork", { courseWorkStates: "PUBLISHED" }),
@@ -64,6 +88,7 @@ async function courseWork(api: Api, course: Course): Promise<WorkItem[]> {
       maxPoints: w.maxPoints,
       grade: s?.assignedGrade,
       late: s?.late,
+      gradedAt: gradedAt(w, s),
     };
   });
 }
@@ -87,6 +112,11 @@ async function allWork(api: Api, ids?: string[]): Promise<{ items: WorkItem[]; t
 }
 
 const OPEN = new Set(["NEW", "CREATED", "RECLAIMED_BY_STUDENT"]);
+
+/** A titled part of the digest, with one bullet per line. */
+function section(title: string, lines: string[], empty: string): string {
+  return `${title}\n${bullets(lines, empty)}`;
+}
 
 function statusOf(i: WorkItem): string {
   if (i.state === "TURNED_IN") return i.late ? "turned in late" : "turned in";
@@ -231,6 +261,78 @@ export const tools: ToolDef<Api>[] = [
         items.map((m) => `${m.title}${m.description ? `, ${stripHtml(m.description, 160).replace(/\n/g, " ")}` : ""}`),
         "No materials posted.",
       );
+    },
+  },
+  {
+    name: "get_whats_new",
+    title: "What's new",
+    description: "One catch up digest for every class: new announcements, newly graded work, overdue work and what is due next. Pass course_ids to limit it, since_days for how far back to look and days_ahead for how far ahead to look. Use this when the user asks 'What's new since yesterday?' or 'What changed in my classes?'",
+    inputSchema: { course_ids: courseIds, since_days: sinceDays, days_ahead: dueAhead },
+    run: async ({ course_ids, since_days, days_ahead }, api) => {
+      const back = since_days ?? 7;
+      const ahead = days_ahead ?? 14;
+      const now = Date.now();
+      const from = now - back * 86400000;
+      const to = now + ahead * 86400000;
+
+      const { courses, total } = await coursesFor(api, course_ids);
+      const perCourse = await Promise.all(
+        courses.map(async (c) => ({
+          name: c.name,
+          work: await courseWork(api, c),
+          announcements: await courseAnnouncements(api, c),
+        })),
+      );
+      const all = perCourse.flatMap((c) => c.work);
+      const announcements = perCourse.flatMap((c) => c.announcements.map((a) => ({ course: c.name, a })));
+
+      const fresh = announcements
+        .map((x) => ({ ...x, when: stampOf(x.a.updateTime ?? x.a.creationTime) }))
+        .filter((x): x is { course: string; a: any; when: Date } => x.when != null && x.when.getTime() >= from)
+        .sort((x, y) => y.when.getTime() - x.when.getTime())
+        .slice(0, 10);
+
+      const graded = all
+        .filter((i): i is WorkItem & { gradedAt: Date } => i.gradedAt != null && i.grade != null && i.gradedAt.getTime() >= from)
+        .sort((a, b) => b.gradedAt.getTime() - a.gradedAt.getTime())
+        .slice(0, 10);
+
+      const overdue = all
+        .filter((i) => OPEN.has(i.state) && i.due != null && i.due.getTime() < now)
+        .sort((a, b) => b.due!.getTime() - a.due!.getTime())
+        .slice(0, 10);
+
+      const next = all
+        .filter((i) => OPEN.has(i.state) && i.due != null && i.due.getTime() >= now && i.due.getTime() <= to)
+        .sort((a, b) => a.due!.getTime() - b.due!.getTime())
+        .slice(0, 10);
+
+      const text = [
+        section(
+          `New announcements (last ${back} days)`,
+          fresh.map((x) => {
+            const note = stripHtml(x.a.text, 200).replace(/\n/g, " ");
+            return `${x.course} (${fmtDate(x.when.toISOString())})${note ? ` ${note}` : ""}`;
+          }),
+          "No new announcements.",
+        ),
+        section(
+          `New grades (last ${back} days)`,
+          graded.map((i) => `${i.title} (${i.course}) graded ${i.grade}/${i.maxPoints ?? "?"} on ${fmtDate(i.gradedAt.toISOString())}`),
+          "No new grades.",
+        ),
+        section(
+          "Overdue work",
+          overdue.map((i) => `${i.title} (${i.course}) was due ${dueText(i)}`),
+          "No overdue work.",
+        ),
+        section(
+          `Due next (${ahead} days)`,
+          next.map((i) => `${i.title} (${i.course}) due ${dueText(i)}`),
+          "Nothing due in that time.",
+        ),
+      ].join("\n\n");
+      return total > 15 ? `${text}\nshowing first 15 of ${total} classes` : text;
     },
   },
 ];
