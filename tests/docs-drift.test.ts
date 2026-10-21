@@ -318,7 +318,7 @@ function sampleApi(): any {
     ],
     "3": [
       { id: "w5", title: "Problem set 4", dueDate: { year: 2026, month: 10, day: 26 }, alternateLink: "https://classroom.google.com/c/Calculus/course/3/courseWork/w5" },
-      { id: "w6", title: "Midterm review", dueDate: { year: 2026, month: 10, day: 12 }, maxPoints: 100, updateTime: "2026-10-20T15:00:00Z" },
+      { id: "w6", title: "Midterm review", dueDate: { year: 2026, month: 10, day: 12 }, maxPoints: 100, updateTime: "2026-10-20T15:00:00Z", alternateLink: "https://classroom.google.com/c/Calculus/course/3/courseWork/w6" },
     ],
   };
   const submissions: Record<string, any[]> = {
@@ -332,7 +332,7 @@ function sampleApi(): any {
     ],
     "3": [
       { courseWorkId: "w5", state: "NEW" },
-      { courseWorkId: "w6", state: "RETURNED", assignedGrade: 88 },
+      { courseWorkId: "w6", state: "RETURNED", assignedGrade: 88, assignedComment: { text: "<p>Good work on the analysis.</p><p>Watch the units on question 3.</p>", creationTime: "2026-10-20T15:00:00Z" } },
     ],
   };
   const announcements: Record<string, any[]> = {

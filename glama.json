@@ -26,7 +26,7 @@
     },
     {
       "name": "get_my_grades",
-      "description": "Grades on returned work for each class. Google Classroom has no overall grade, so this adds up graded work only. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'How am I doing in my classes?' or 'What grades have I gotten back?'"
+      "description": "Grades on returned work for each class, with the comment the teacher left on the work. Google Classroom has no overall grade, so this adds up graded work only. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'How am I doing in my classes?' or 'What grades have I gotten back?'"
     },
     {
       "name": "get_announcements",
@@ -38,7 +38,7 @@
     },
     {
       "name": "get_whats_new",
-      "description": "One catch up digest for every class: new announcements, newly graded work, overdue work and what is due next. Pass course_ids to limit it, since_days for how far back to look and days_ahead for how far ahead to look. Use this when the user asks 'What's new since yesterday?' or 'What changed in my classes?'"
+      "description": "One catch up digest for every class: new announcements, newly graded work with the comment the teacher left, overdue work and what is due next. Pass course_ids to limit it, since_days for how far back to look and days_ahead for how far ahead to look. Use this when the user asks 'What's new since yesterday?' or 'What changed in my classes?'"
     }
   ]
 }

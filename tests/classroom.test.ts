@@ -6,6 +6,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createClassroomApi } from "../src/classroom.js";
 import { createTokenProvider, buildAuthUrl, exchangeCode, SCOPES } from "../src/auth.js";
 import { createServer } from "../src/server.js";
+import { tools } from "../src/tools.js";
 
 const day = 86400000;
 function dueParts(offsetDays: number, withTime = true) {
@@ -67,13 +68,15 @@ beforeAll(async () => {
         { courseWorkId: "w1", state: "NEW" },
         { courseWorkId: "w2", state: "TURNED_IN" },
         { courseWorkId: "w3", state: "CREATED" },
-        { courseWorkId: "w4", state: "RETURNED", assignedGrade: 4 },
+        { courseWorkId: "w4", state: "RETURNED", assignedGrade: 4, assignedComment: { text: "<p>Nice work,<br>watch your signs.</p>", creationTime: new Date(Date.now() - 2 * day).toISOString() } },
       ] });
     if (p === "/v1/courses/200/courseWork") return send(200, { courseWork: [
       { id: "e1", title: "Essay", ...dueParts(-10), maxPoints: 100, updateTime: new Date(Date.now() - 30 * day).toISOString(), alternateLink: "https://classroom.google.com/c/English/course/200/courseWork/e1" },
       { id: "e2", title: "Outline", ...dueParts(7), maxPoints: 25, alternateLink: "https://classroom.google.com/c/English/course/200/courseWork/e2" },
     ] });
-    if (p === "/v1/courses/200/courseWork/-/studentSubmissions") return send(200, { studentSubmissions: [{ courseWorkId: "e1", state: "RETURNED", assignedGrade: 90 }] });
+    if (p === "/v1/courses/200/courseWork/-/studentSubmissions") return send(200, { studentSubmissions: [
+      { courseWorkId: "e1", state: "RETURNED", assignedGrade: 90, assignedComment: { text: "Good argument, add one more source.", creationTime: new Date(Date.now() - 30 * day).toISOString() } },
+    ] });
     if (p === "/v1/courses/300/courseWork" || p === "/v1/courses/300/courseWork/-/studentSubmissions") return send(200, {});
     if (p.endsWith("/announcements")) {
       if (!p.includes("/100/")) return send(200, { announcements: [] });
@@ -184,6 +187,33 @@ describe("google-classroom-student-mcp", () => {
     expect(text).toContain("Math 4/5 points on 1 graded items (80.0%)");
     expect(text).toContain("English 90/100");
     expect(text).toContain("Biology no graded work yet");
+  });
+
+  it("prints the comment the teacher left on returned work", async () => {
+    const c = await connect();
+    const grades = (await call(c, "get_my_grades")).text;
+    expect(grades).toContain("Reading: 4/5");
+    expect(grades).toContain("teacher said: Nice work, watch your signs.");
+    expect(grades).toContain("teacher said: Good argument, add one more source.");
+    expect(grades).toContain("link: https://classroom.google.com/c/English/course/200/courseWork/e1");
+    expect(grades).not.toContain("<p>");
+    const digest = (await call(c, "get_whats_new")).text;
+    expect(digest).toContain("teacher said: Nice work, watch your signs.");
+  });
+
+  it("leaves the comment line out when the teacher wrote nothing", async () => {
+    const api: any = {
+      get: async () => ({}),
+      list: async (path: string) => {
+        if (path === "/v1/courses") return [{ id: "1", name: "Math" }];
+        if (path.endsWith("/studentSubmissions")) return [{ courseWorkId: "w1", state: "RETURNED", assignedGrade: 8 }];
+        return [{ id: "w1", title: "Quiz 1", maxPoints: 10, alternateLink: "https://classroom.google.com/c/Math/course/1/courseWork/w1" }];
+      },
+    };
+    const tool = tools.find((t) => t.name === "get_my_grades")!;
+    const out = await tool.run({}, api);
+    expect(out).toContain("Math 8/10 points on 1 graded items (80.0%)");
+    expect(out).not.toContain("teacher said:");
   });
 
   it("shows announcements with HTML stripped and materials", async () => {

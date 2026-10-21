@@ -28,6 +28,8 @@ interface WorkItem {
   late?: boolean;
   /** When the teacher gave the work back with a grade. */
   gradedAt?: Date;
+  /** What the teacher wrote when they returned the work. */
+  comment?: string;
   /** The page of this assignment in the Classroom web UI. */
   link?: string;
 }
@@ -67,6 +69,16 @@ function gradedAt(work: any, submission: any): Date | undefined {
   return stampOf(submission?.assignedComment?.creationTime) ?? stampOf(work?.updateTime);
 }
 
+/**
+ * What the teacher wrote when they returned the work. Classroom sends the
+ * comment as HTML, so the tags come off and the text stays on one line.
+ */
+function commentText(submission: any): string | undefined {
+  const text = stripHtml(submission?.assignedComment?.text).replace(/\s+/g, " ").trim();
+  if (!text) return undefined;
+  return text.length > 300 ? `${text.slice(0, 300)}...` : text;
+}
+
 async function courseAnnouncements(api: Api, course: Course): Promise<any[]> {
   return api.list<any>(`/v1/courses/${course.id}/announcements`, "announcements", { announcementStates: "PUBLISHED" }, 1);
 }
@@ -91,6 +103,7 @@ async function courseWork(api: Api, course: Course): Promise<WorkItem[]> {
       grade: s?.assignedGrade,
       late: s?.late,
       gradedAt: gradedAt(w, s),
+      comment: commentText(s),
       link: w.alternateLink,
     };
   });
@@ -149,6 +162,17 @@ function statusOf(i: WorkItem): string {
   if (i.state === "TURNED_IN") return i.late ? "turned in late" : "turned in";
   if (i.state === "RETURNED") return i.grade != null ? `graded ${i.grade}/${i.maxPoints ?? "?"}` : "returned";
   return OPEN.has(i.state) ? "not turned in" : i.state.toLowerCase();
+}
+
+/**
+ * A grade with the words the teacher wrote under it and the Classroom page
+ * of the work, so the student can read the comment and open the work.
+ */
+function gradedItem(item: WorkItem, head: string): string {
+  const lines = [head];
+  if (item.comment) lines.push(`  teacher said: ${item.comment}`);
+  if (item.link) lines.push(`  link: ${item.link}`);
+  return lines.join("\n");
 }
 
 export const tools: ToolDef<Api>[] = [
@@ -227,7 +251,7 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_my_grades",
     title: "My grades",
-    description: "Grades on returned work for each class. Google Classroom has no overall grade, so this adds up graded work only. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'How am I doing in my classes?' or 'What grades have I gotten back?'",
+    description: "Grades on returned work for each class, with the comment the teacher left on the work. Google Classroom has no overall grade, so this adds up graded work only. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'How am I doing in my classes?' or 'What grades have I gotten back?'",
     inputSchema: { course_ids: courseIds },
     run: async ({ course_ids }, api) => {
       const { courses, total } = await coursesFor(api, course_ids);
@@ -242,7 +266,12 @@ export const tools: ToolDef<Api>[] = [
         }
         const earned = graded.reduce((n, i) => n + (i.grade ?? 0), 0);
         const possible = graded.reduce((n, i) => n + (i.maxPoints ?? 0), 0);
-        lines.push(`${name} ${earned}/${possible} points on ${graded.length} graded items (${((earned / possible) * 100).toFixed(1)}%)`);
+        const head = `${name} ${earned}/${possible} points on ${graded.length} graded items (${((earned / possible) * 100).toFixed(1)}%)`;
+        const feedback = graded
+          .filter((i) => i.comment)
+          .map((i) => gradedItem(i, `  ${i.title}: ${i.grade}/${i.maxPoints ?? "?"}`))
+          .join("\n");
+        lines.push(feedback ? `${head}\n${feedback}` : head);
       }
       let text = bullets(lines, "No grades found.");
       if (total > 15) text += `\nshowing first 15 of ${total} classes`;
@@ -300,7 +329,7 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_whats_new",
     title: "What's new",
-    description: "One catch up digest for every class: new announcements, newly graded work, overdue work and what is due next. Pass course_ids to limit it, since_days for how far back to look and days_ahead for how far ahead to look. Use this when the user asks 'What's new since yesterday?' or 'What changed in my classes?'",
+    description: "One catch up digest for every class: new announcements, newly graded work with the comment the teacher left, overdue work and what is due next. Pass course_ids to limit it, since_days for how far back to look and days_ahead for how far ahead to look. Use this when the user asks 'What's new since yesterday?' or 'What changed in my classes?'",
     inputSchema: { course_ids: courseIds, since_days: sinceDays, days_ahead: dueAhead },
     run: async ({ course_ids, since_days, days_ahead }, api) => {
       const back = since_days ?? 7;
@@ -352,7 +381,9 @@ export const tools: ToolDef<Api>[] = [
         ),
         section(
           `New grades (last ${back} days)`,
-          graded.map((i) => `${i.title} (${i.course}) graded ${i.grade}/${i.maxPoints ?? "?"} on ${fmtDate(i.gradedAt.toISOString())}`),
+          graded.map((i) =>
+            gradedItem(i, `${i.title} (${i.course}) graded ${i.grade}/${i.maxPoints ?? "?"} on ${fmtDate(i.gradedAt.toISOString())}`),
+          ),
           "No new grades.",
         ),
         section(

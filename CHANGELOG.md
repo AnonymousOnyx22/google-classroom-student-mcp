@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- get_my_grades and get_whats_new now print the comment the teacher left when they returned the work, under the score, with the Classroom page of the work. The comment comes from the same assigned comment the server already read for the date of the grade.
+- Added tests that check the comment shows up, that the HTML tags come off it and that no comment line is printed when the teacher wrote nothing.
 - The README now has a Questions students ask section. It lists the questions students ask, the tool that answers each one and what the answer holds.
 - The README now has a sample answer for get_todo, get_missing_assignments and get_whats_new, next to the sample for get_upcoming_due_dates. llms.txt carries the same samples.
 - Added a test that checks every sample answer in the README and in llms.txt matches what the tool really prints, and a test that checks the questions in both files name the same tools.
