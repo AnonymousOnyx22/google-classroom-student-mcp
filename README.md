@@ -19,7 +19,11 @@ Ask these right after setup:
 
 ## Quick start with npx
 
-Install the Google Classroom MCP server with npx, then add this to your AI app's MCP config (for Claude Desktop that's `claude_desktop_config.json`):
+Install the Google Classroom MCP server with npx, then add it to your AI app. Pick your app below.
+
+### Claude Desktop
+
+Add this to `claude_desktop_config.json`:
 
 ```json
 {
@@ -37,6 +41,42 @@ Install the Google Classroom MCP server with npx, then add this to your AI app's
 }
 ```
 
+### Claude Code
+
+Run this one command:
+
+```bash
+claude mcp add google-classroom-student-mcp \
+  -e GOOGLE_CLIENT_ID=your-id \
+  -e GOOGLE_CLIENT_SECRET=your-secret \
+  -e GOOGLE_REFRESH_TOKEN=paste-from-login \
+  -- npx -y google-classroom-student-mcp
+```
+
+Or put the same JSON block as Claude Desktop in a `.mcp.json` file in your project folder, or run `claude mcp add-json` with it.
+
+### Cursor
+
+Put this in `.cursor/mcp.json` in your project folder, or in `~/.cursor/mcp.json` to use it everywhere:
+
+```json
+{
+  "mcpServers": {
+    "classroom": {
+      "command": "npx",
+      "args": ["-y", "google-classroom-student-mcp"],
+      "env": {
+        "GOOGLE_CLIENT_ID": "your-id",
+        "GOOGLE_CLIENT_SECRET": "your-secret",
+        "GOOGLE_REFRESH_TOKEN": "paste-from-login"
+      }
+    }
+  }
+}
+```
+
+Other MCP apps take the same `mcpServers` JSON, with `command` set to `npx` and `args` set to `["-y", "google-classroom-student-mcp"]`.
+
 ## Setup (about 10 minutes, one time)
 
 Google makes every app ask for its own permission, so you create a small private "app" that only you use.
@@ -53,7 +93,7 @@ GOOGLE_CLIENT_ID=your-id GOOGLE_CLIENT_SECRET=your-secret npx google-classroom-s
 
 Open the link it prints, approve read only access, and copy the three values it prints.
 
-6. Add them to your AI app's MCP config (for Claude Desktop that's `claude_desktop_config.json`).
+6. Add them to your AI app's MCP config, using one of the formats from the Quick start above.
 
 7. Restart your AI app and ask "what's due this week?"
 
