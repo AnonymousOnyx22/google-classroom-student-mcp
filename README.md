@@ -141,6 +141,7 @@ Google Classroom has no overall course grade, so `get_my_grades` adds up graded 
 | Sign in failed, expired or revoked | While your app is in testing mode, Google expires refresh tokens after 7 days. Run `login` again. |
 | Access denied | Your school's Google admin may block third party apps. Ask your admin or use a personal account. |
 | Not found | Check the course or item ID in your request. |
+| Rate limited | Too many requests. Wait a minute and try again. |
 | Google did not return a refresh token | Remove the app from your connected apps and run `login` again. |
 
 ## Development

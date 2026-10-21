@@ -106,7 +106,7 @@ export function describeStatus(status: number): string {
     case 404:
       return "Not found. Check the course or item ID in your request.";
     case 429:
-      return "Rate limited by the school's server. Wait a minute and try again.";
+      return "Rate limited. Too many requests. Wait a minute and try again.";
     default:
       return status >= 500 ? `The school's server had a problem (HTTP ${status}). Try again shortly.` : `Request failed (HTTP ${status}).`;
   }

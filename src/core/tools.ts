@@ -23,7 +23,7 @@ export async function runTool<Api>(tool: ToolDef<Api>, args: unknown, api: Api):
     const text = await tool.run(args, api);
     return { content: [{ type: "text", text }] };
   } catch (err) {
-    const msg = err instanceof ApiError ? err.message : `Something went wrong: ${(err as Error).message}`;
+    const msg = err instanceof ApiError ? err.message : `Something went wrong: ${(err as Error).message}. Run \`npx google-classroom-student-mcp doctor\` to check your setup.`;
     return { content: [{ type: "text", text: msg }], isError: true };
   }
 }
@@ -83,7 +83,7 @@ export function stripHtml(html?: string | null, max = 4000): string {
   return text.length > max ? text.slice(0, max) + "\n[truncated]" : text;
 }
 
-export function bullets(lines: string[], empty = "Nothing to show."): string {
+export function bullets(lines: string[], empty = "Nothing to show. Run `npx google-classroom-student-mcp doctor` to check your setup, and make sure the Google Classroom API is enabled in your Google Cloud project."): string {
   return lines.length ? lines.map((l) => `- ${l}`).join("\n") : empty;
 }
 

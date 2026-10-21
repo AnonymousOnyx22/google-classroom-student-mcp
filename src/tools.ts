@@ -96,7 +96,7 @@ export const tools: ToolDef<Api>[] = [
     inputSchema: {},
     run: async (_args, api) => {
       const courses = await activeCourses(api);
-      return bullets(courses.map((c) => `${c.name}${c.section ? ` (${c.section})` : ""} [id ${c.id}]`), "No active classes found.");
+      return bullets(courses.map((c) => `${c.name}${c.section ? ` (${c.section})` : ""} [id ${c.id}]`), "No active classes found. Run `npx google-classroom-student-mcp doctor` to check your setup, and make sure the Google Classroom API is enabled in your Google Cloud project.");
     },
   },
   {
