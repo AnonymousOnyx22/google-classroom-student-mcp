@@ -61,6 +61,18 @@ function namesIn(text: string): string[] {
   return expectedNames.filter((name) => new RegExp(`\\b${name}\\b`).test(text));
 }
 
+/** The comparison between the Classroom server and the Brightspace server in the README. */
+function compareSection(): string {
+  const section = readRootFile("README.md")
+    .split(/^## /m)
+    .find((s) => s.startsWith("Google Classroom vs Brightspace"));
+  expect(section, "README.md has no comparison section").toBeDefined();
+  return section!;
+}
+
+/** Things the comparison says this server reads, so the table cannot drift from the tools. */
+const COMPARED_THINGS = ["classes", "assignments", "grades", "announcements", "materials"];
+
 /** Tools a note says take the given optional argument. */
 function notedToolsIn(note: string, param: string): string[] {
   const claims = new Set<string>();
@@ -168,6 +180,29 @@ function stubApi(work: any[]): any {
     },
   };
 }
+
+describe("the README compares the Classroom server with the Brightspace server", () => {
+  it("has a comparison section that names both packages", () => {
+    const section = compareSection();
+    expect(section).toContain("google-classroom-student-mcp");
+    expect(section).toContain("brightspace-d2l-mcp");
+  });
+
+  it("describes what this server really reads", () => {
+    const section = compareSection().toLowerCase();
+    for (const thing of COMPARED_THINGS) {
+      expect(section, `comparison mentions ${thing}`).toContain(thing);
+    }
+  });
+
+  it("says both servers are read only", () => {
+    const row = compareSection()
+      .split("\n")
+      .find((line) => line.trim().startsWith("| Read only |"));
+    expect(row, "comparison has no read only row").toBeDefined();
+    expect(row!.toLowerCase().split("yes").length - 1).toBe(2);
+  });
+});
 
 describe("the sample answer matches what the tool prints", () => {
   afterEach(() => {

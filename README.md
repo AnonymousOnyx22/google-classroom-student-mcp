@@ -146,6 +146,28 @@ Google Classroom has no overall course grade, so `get_my_grades` adds up graded 
 
 `get_whats_new` is the catch up digest. It prints new announcements, new grades, overdue work and what is due next in one answer. An announcement counts as new when it was posted or changed inside the window. The date of a new grade comes from the teacher's comment on the work when there is one, otherwise from the last change to the assignment.
 
+## Google Classroom vs Brightspace MCP
+
+Google Classroom and D2L Brightspace are different platforms, so they need different servers. This one reads Google Classroom. The [Brightspace MCP](https://github.com/AnonymousOnyx22/brightspace-d2l-mcp) reads D2L Brightspace. Here is how they line up.
+
+| | Google Classroom MCP (this one) | Brightspace MCP |
+| --- | --- | --- |
+| Platform | Google Classroom, the one inside Google Workspace for Education | D2L Brightspace, common in colleges and universities |
+| Install | `npx -y google-classroom-student-mcp`, then three values in your app config | `npx brightspace-d2l-mcp setup`, which writes the config for you |
+| Sign in | You make your own OAuth app in the Google Cloud console, run one time sign in, then paste the client ID, the client secret and the refresh token | You pick your school and sign in with your own school account in a browser window. Any sign in method your school uses works, and your password is never stored |
+| After setup | While your Cloud app is in testing mode, Google expires the refresh token every 7 days, so you run the login command again now and then | It stays signed in quietly, and a browser window only opens when your school asks you to sign in again |
+| What your school has to do | Nothing. Your own Google account and your own Cloud project are enough, though a school admin can block third party apps | Nothing. It uses your own student sign in, so no API key from an administrator is needed |
+| Classes and work | Active classes, then every assignment with its due date, its points and whether you turned it in | Enrolled courses, then assignments and quizzes with the real submission status of each one |
+| Grades | Points earned on returned work, added up per class. Google Classroom has no overall grade, so there is no overall percentage | Grade breakdown per course with points, percentages and instructor comments, plus a target grade tool that tells you what you need on the work that is left |
+| News | Recent announcements, and a catch up digest with new announcements, new grades, overdue work and what is due next | Recent announcements, and a catch up digest that also covers newly marked work, unread discussions and quizzes you have not tried yet |
+| Course files | Materials posted in a class | Course modules, files, links, the syllabus, the files attached to an assignment, discussions, class lists and calendar events such as exams and labs. It can also save a course file to a folder you pick and build a calendar file of your deadlines |
+| Read only | Yes, it can never turn in, edit or delete anything | Yes, it only reads from Brightspace |
+| Price and license | Free forever, open source, MIT license | Open source, MIT license, and it runs on your own computer |
+
+Both servers only read, so neither one can hand in your work for you. If your classes are in Google Classroom, install this one. If your school runs D2L Brightspace, install the Brightspace MCP instead.
+
+Other Brightspace servers exist too, such as brightspace-mcp-server and brightspace-mcp. The author keeps a side by side comparison of them at [brightspace-mcp.netlify.app/compare](https://brightspace-mcp.netlify.app/compare/).
+
 ## Privacy and security
 
 - Your credentials stay on your computer and are only sent to Google.
@@ -190,6 +212,8 @@ All free, open source and read only where they touch your accounts. Browse the f
 | [Citations MCP](https://github.com/AnonymousOnyx22/student-citations-mcp) | APA, MLA and Chicago citations from a DOI, an ISBN or typed details. No account. |
 | [Study Planner MCP](https://github.com/AnonymousOnyx22/study-planner-mcp) | Exam study schedules, spaced repetition dates, pomodoro plans and assignment milestones. Works offline. |
 | [Paper Finder MCP](https://github.com/AnonymousOnyx22/paper-finder-student-mcp) | Search scholarly papers, find open access copies and related work through OpenAlex. No key needed. |
+
+Picking between the two school platforms? See [Google Classroom vs Brightspace MCP](#google-classroom-vs-brightspace-mcp).
 
 ## License
 
