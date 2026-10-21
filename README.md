@@ -2,6 +2,9 @@
 
 [![npm version](https://img.shields.io/npm/v/google-classroom-student-mcp.svg)](https://www.npmjs.com/package/google-classroom-student-mcp)
 [![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-blue.svg)](https://modelcontextprotocol.io)
+[![Smithery](https://img.shields.io/badge/Smithery-Google%20Classroom%20MCP-blue.svg)](https://smithery.ai/server/google-classroom-student-mcp)
+[![Glama](https://img.shields.io/badge/Glama-Google%20Classroom%20MCP-blue.svg)](https://glama.ai/mcp/servers/AnonymousOnyx22/google-classroom-student-mcp)
+[![mcp.so](https://img.shields.io/badge/mcp.so-Google%20Classroom%20MCP-blue.svg)](https://mcp.so/servers/google-classroom-student-mcp)
 
 Ask your AI what's actually left to do in Google Classroom.
 
@@ -204,6 +207,8 @@ The test runner needs Node 22.12 or newer. The server itself runs on Node 20 or 
 ## More free student MCP servers
 
 All free, open source and read only where they touch your accounts. Browse the full list at [brightspacemcp.com/more-mcps](https://brightspacemcp.com/more-mcps/).
+
+This server is also listed in the [Smithery](https://smithery.ai/server/google-classroom-student-mcp), [Glama](https://glama.ai/mcp/servers/AnonymousOnyx22/google-classroom-student-mcp) and [mcp.so](https://mcp.so/servers/google-classroom-student-mcp) directories.
 
 | Server | What it does |
 | --- | --- |

@@ -46,3 +46,18 @@ describe("package metadata keeps the google classroom mcp phrase", () => {
     expect(readRootFile("llms.txt").toLowerCase()).toContain(PHRASE);
   });
 });
+
+/** The page that lists every free student MCP server. */
+const LISTING_URL = "https://brightspacemcp.com/more-mcps/";
+
+describe("the package points at the listing page", () => {
+  it("uses the listing page as the npm homepage", () => {
+    const pkg = readRootJson("package.json");
+    expect(pkg.homepage).toBe(LISTING_URL);
+  });
+
+  it("uses the listing page as the website in server.json", () => {
+    const server = readRootJson("server.json");
+    expect(server.websiteUrl).toBe(LISTING_URL);
+  });
+});

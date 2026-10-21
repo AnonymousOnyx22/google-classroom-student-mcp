@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The README header now has a badge for every directory the server is listed in: Smithery, Glama and mcp.so. Each badge links to the server page in that directory, and the README names the three directories in the text as well.
+- package.json and server.json now point at the list of free student MCP servers on brightspacemcp.com, so the npm page and the registry entry land on the page that lists the server.
+- llms.txt now links the three directories in its Links section.
+- Added a test that checks the npm homepage and the website in server.json stay on the listing page, and a test that checks the README badges link the three directories.
 - Added a test that checks the tool table in the README against the tool list in the code, so a new tool cannot land in the code without a row in the README.
 - The optional since_days argument is now part of the docs checks, so the README and llms.txt have to keep naming it for the tool that takes it.
 - get_todo, get_assignments, get_announcements and get_course_materials now print the Classroom page of each item under the title, so the AI can hand the student a direct link to the work instead of only a title.

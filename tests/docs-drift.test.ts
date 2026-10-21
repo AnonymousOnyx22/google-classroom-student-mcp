@@ -206,6 +206,57 @@ describe("the README points at llms.txt", () => {
   });
 });
 
+/** The directories the server is listed in, each with the page that shows it. */
+const LISTINGS = [
+  { name: "Smithery", url: "https://smithery.ai/server/google-classroom-student-mcp" },
+  { name: "Glama", url: "https://glama.ai/mcp/servers/AnonymousOnyx22/google-classroom-student-mcp" },
+  { name: "mcp.so", url: "https://mcp.so/servers/google-classroom-student-mcp" },
+];
+
+/** One badge line in the README, for example "[![npm version](image)](link)". */
+const BADGE_LINE = /^\[!\[([^\]]+)\]\(([^)]+)\)\]\(([^)]+)\)$/;
+
+/** The header of the README, the part above the first section. */
+function readmeHeader(): string {
+  return readRootFile("README.md").split(/^## /m)[0];
+}
+
+/** The badges in the README, each with its name, its image and the page it links to. */
+function readmeBadges(): { name: string; image: string; link: string }[] {
+  const out: { name: string; image: string; link: string }[] = [];
+  for (const raw of readRootFile("README.md").split("\n")) {
+    const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
+    const m = line.match(BADGE_LINE);
+    if (m) out.push({ name: m[1], image: m[2], link: m[3] });
+  }
+  return out;
+}
+
+describe("the README header shows the directories the server is listed in", () => {
+  it("has a badge for every directory, and it links to the server page there", () => {
+    const badges = readmeBadges();
+    for (const listing of LISTINGS) {
+      const badge = badges.find((b) => b.name === listing.name);
+      expect(badge, `README has no badge for ${listing.name}`).toBeDefined();
+      expect(badge!.link, `the ${listing.name} badge links somewhere else`).toBe(listing.url);
+    }
+  });
+
+  it("keeps the badges in the header, above the first section", () => {
+    const header = readmeHeader();
+    for (const listing of LISTINGS) {
+      expect(header, `the ${listing.name} badge is not in the header`).toContain(`[${listing.name}]`);
+    }
+  });
+
+  it("names the same directories in the text", () => {
+    const readme = readRootFile("README.md");
+    for (const listing of LISTINGS) {
+      expect(readme, `the text does not mention ${listing.name}`).toContain(`[${listing.name}](${listing.url})`);
+    }
+  });
+});
+
 /** One line of the sample answer, for example "- Essay outline (English) due Fri, Oct 23". */
 const SAMPLE_LINE = /^- .+ \(.+\) due .+$/;
 

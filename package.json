@@ -104,7 +104,7 @@
     "type": "git",
     "url": "git+https://github.com/AnonymousOnyx22/google-classroom-student-mcp.git"
   },
-  "homepage": "https://brightspacemcp.com",
+  "homepage": "https://brightspacemcp.com/more-mcps/",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
     "zod": "^4.6.7"

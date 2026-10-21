@@ -35,3 +35,6 @@ Every line has the assignment title, the class and the due date. Work you alread
 ## Links
 - Source and README, https://github.com/AnonymousOnyx22/google-classroom-student-mcp
 - More free student MCP servers, https://brightspacemcp.com/more-mcps/
+- Listed on Smithery, https://smithery.ai/server/google-classroom-student-mcp
+- Listed on Glama, https://glama.ai/mcp/servers/AnonymousOnyx22/google-classroom-student-mcp
+- Listed on mcp.so, https://mcp.so/servers/google-classroom-student-mcp
