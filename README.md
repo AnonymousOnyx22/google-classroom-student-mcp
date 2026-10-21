@@ -154,6 +154,8 @@ npm test
 
 Tests run against a fake Google server, so they need no account or network. One test also checks that llms.txt and glama.json still list every tool with the same description.
 
+The test runner needs Node 22.12 or newer. The server itself runs on Node 20 or newer.
+
 ## More free student MCP servers
 
 All free, open source and read only where they touch your accounts. Browse the full list at [brightspacemcp.com/more-mcps](https://brightspacemcp.com/more-mcps/).

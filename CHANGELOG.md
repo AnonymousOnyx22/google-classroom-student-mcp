@@ -21,6 +21,8 @@
 
 ## Unreleased
 
+- Updated the dependencies. The MCP SDK stays on 1.32.1, which is the newest release, and the test runner moved from vitest 2 to vitest 5.
+- The test runner needs Node 22.12 or newer. The server itself still runs on Node 20 or newer.
 - The package description and the npm keywords now spell out "Google Classroom MCP", so the server shows up when people search npm for that phrase.
 - server.json now has the title "Google Classroom MCP for students" and a description that names the phrase. The registry allows 100 characters at most for the description.
 - The README and llms.txt now call it the Google Classroom MCP server.
