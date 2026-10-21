@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4
+
+- Add example asks to all 8 tool descriptions and sync docs tests
+- Add Claude Code and Cursor config examples to README Quick start
+
 ## 0.1.3
 
 - Small fixes and clearer docs
