@@ -92,7 +92,7 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_my_courses",
     title: "My courses",
-    description: "List the student's active Google Classroom classes with their IDs.",
+    description: "List the student's active Google Classroom classes with their IDs. Use this when the user asks 'What classes am I in?' or needs a course ID to pass to another tool.",
     inputSchema: {},
     run: async (_args, api) => {
       const courses = await activeCourses(api);
@@ -102,7 +102,7 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_todo",
     title: "To-do list",
-    description: "Everything assigned that the student has not turned in yet. Pass course_ids to limit it, or leave empty for all active classes.",
+    description: "Everything assigned that the student has not turned in yet. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'What do I still have to do?' or 'What's left to turn in across all my classes?'",
     inputSchema: { course_ids: courseIds },
     run: async ({ course_ids }, api) => {
       const items = (await allWork(api, course_ids)).filter((i) => OPEN.has(i.state));
@@ -113,7 +113,7 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_upcoming_due_dates",
     title: "Upcoming due dates",
-    description: "Work that is due soon and not turned in, soonest first. Pass course_ids or days_ahead to narrow it, or leave both empty.",
+    description: "Work that is due soon and not turned in, soonest first. Pass course_ids or days_ahead to narrow it, or leave both empty. Use this when the user asks 'What's due this week across all my classes?' or 'What's coming up?'",
     inputSchema: { course_ids: courseIds, days_ahead: daysAhead },
     run: async ({ course_ids, days_ahead }, api) => {
       const now = Date.now();
@@ -128,7 +128,7 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_missing_assignments",
     title: "Missing assignments",
-    description: "Past due work that has not been turned in. Pass course_ids to limit it, or leave empty for all active classes.",
+    description: "Past due work that has not been turned in. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'What's overdue?' or 'What am I behind on?'",
     inputSchema: { course_ids: courseIds },
     run: async ({ course_ids }, api) => {
       const now = Date.now();
@@ -140,7 +140,7 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_assignments",
     title: "Class assignments",
-    description: "Assignments for one class with due dates and status.",
+    description: "Assignments for one class with due dates and status. Use this when the user asks 'What's due in this class?' or wants every assignment and its points for a single class.",
     inputSchema: { course_id: courseId },
     run: async ({ course_id }, api) => {
       const course = (await activeCourses(api)).find((c) => String(c.id) === String(course_id)) ?? { id: String(course_id), name: `class ${course_id}` };
@@ -155,7 +155,7 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_my_grades",
     title: "My grades",
-    description: "Grades on returned work for each class. Google Classroom has no overall grade, so this adds up graded work only. Pass course_ids to limit it, or leave empty for all active classes.",
+    description: "Grades on returned work for each class. Google Classroom has no overall grade, so this adds up graded work only. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'How am I doing in my classes?' or 'What grades have I gotten back?'",
     inputSchema: { course_ids: courseIds },
     run: async ({ course_ids }, api) => {
       const courses = await coursesFor(api, course_ids);
@@ -178,7 +178,7 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_announcements",
     title: "Announcements",
-    description: "Recent announcements. Pass course_ids to limit it, or leave empty for all active classes.",
+    description: "Recent announcements. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'Did my teacher post anything new?' or 'What did my teacher announce?'",
     inputSchema: { course_ids: z.array(courseId).optional() },
     run: async ({ course_ids }, api) => {
       const courses = await activeCourses(api);
@@ -202,7 +202,7 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_course_materials",
     title: "Class materials",
-    description: "Posted materials for one class.",
+    description: "Posted materials for one class. Use this when the user asks 'What materials did my teacher post?' or wants the readings, slides and handouts for one class.",
     inputSchema: { course_id: courseId },
     run: async ({ course_id }, api) => {
       const items = await api.list<any>(`/v1/courses/${course_id}/courseWorkMaterials`, "courseWorkMaterial", { courseWorkMaterialStates: "PUBLISHED" });

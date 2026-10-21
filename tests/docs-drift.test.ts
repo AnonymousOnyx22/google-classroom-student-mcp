@@ -89,6 +89,14 @@ describe("llms.txt and glama.json stay in lockstep with the tool definitions", (
     }
   });
 
+  it("gives a real example ask in every tool description", () => {
+    for (const tool of expected) {
+      const examples = tool.description.match(/'[^']+\?'/g) ?? [];
+      expect(examples.length, `example asks in the description for ${tool.name}`).toBeGreaterThanOrEqual(1);
+      expect(tool.description, `description for ${tool.name}`).toContain("Use this when the user asks");
+    }
+  });
+
   it("names the right tools for the optional arguments in the llms.txt note", () => {
     for (const param of NOTED_PARAMS) {
       expect(notedTools(param).sort(), `llms.txt note about ${param}`).toEqual(toolsWithParam(param).sort());
