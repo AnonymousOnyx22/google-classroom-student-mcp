@@ -195,7 +195,7 @@ npm run build
 npm test
 ```
 
-Tests run against a fake Google server, so they need no account or network. Other tests check that [llms.txt](./llms.txt) and glama.json still list every tool with the same description, and that the version matches package.json.
+Tests run against a fake Google server, so they need no account or network. Other tests check that the tool table in this README, [llms.txt](./llms.txt) and glama.json still list every tool, that the tool descriptions in llms.txt and glama.json match the code, and that the version matches package.json.
 
 The version that `--version` prints and the MCP handshake sends comes from package.json, so bump the version there and nowhere else.
 

@@ -6,10 +6,19 @@ const expected = tools.map((t) => ({ name: t.name, description: t.description })
 const expectedNames = expected.map((t) => t.name);
 
 /** Optional arguments that llms.txt talks about in its note under the tool list. */
-const NOTED_PARAMS = ["course_ids", "days_ahead"];
+const NOTED_PARAMS = ["course_ids", "days_ahead", "since_days"];
 
 /** One tool line in llms.txt, for example "- get_todo: What is left to turn in." */
 const TOOL_LINE = /^- ([a-z0-9_]+): (.*)$/;
+
+/** One tool row in the README table, for example "| `get_todo` | What is left to turn in |". */
+const README_ROW = /^\|\s*`([a-z0-9_]+)`\s*\|\s*(.*?)\s*\|\s*$/;
+
+/** Words that say nothing about what a tool does. */
+const FILLER_WORDS = new Set([
+  "a", "an", "and", "are", "as", "at", "by", "each", "for", "from", "in", "is", "it", "its",
+  "of", "on", "one", "or", "per", "that", "the", "this", "to", "with", "you", "your",
+]);
 
 /** A markdown link to llms.txt in the README, for example "[llms.txt](./llms.txt)". */
 const LLMS_LINK = /\]\(\s*\.?\/?llms\.txt\s*\)/;
@@ -55,6 +64,27 @@ function readmeNote(): string {
     .filter((line) => !line.trim().startsWith("|"))
     .filter((line) => !line.trim().startsWith("#"))
     .join("\n");
+}
+
+/** The tool rows of the README table, each with the short summary the row gives. */
+function readmeRows(): { name: string; summary: string }[] {
+  const out: { name: string; summary: string }[] = [];
+  for (const raw of toolsSection("README.md").split("\n")) {
+    const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
+    const m = line.match(README_ROW);
+    if (m) out.push({ name: m[1], summary: m[2] });
+  }
+  return out;
+}
+
+/** The words of a piece of text that carry meaning, in lower case. */
+function contentWords(text: string): Set<string> {
+  return new Set(
+    text
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter((w) => w.length > 2 && !FILLER_WORDS.has(w)),
+  );
 }
 
 function namesIn(text: string): string[] {
@@ -135,6 +165,37 @@ describe("llms.txt and glama.json stay in lockstep with the tool definitions", (
   it("names the right tools for the optional arguments in the README", () => {
     for (const param of NOTED_PARAMS) {
       expect(notedToolsIn(readmeNote(), param).sort(), `README note about ${param}`).toEqual(toolsWithParam(param).sort());
+    }
+  });
+});
+
+describe("the README tool table stays in lockstep with the tool definitions", () => {
+  it("lists every tool from src/tools.ts in the README table, once and in the same order", () => {
+    expect(readmeRows().map((r) => r.name)).toEqual(expectedNames);
+  });
+
+  it("lists no tool in the README table that src/tools.ts does not have", () => {
+    for (const row of readmeRows()) {
+      expect(expectedNames, `README table lists an unknown tool ${row.name}`).toContain(row.name);
+    }
+  });
+
+  it("gives every tool in the README table its own summary of what it does", () => {
+    const rows = readmeRows();
+    for (const row of rows) {
+      expect(row.summary.length, `README table row for ${row.name} has no summary`).toBeGreaterThan(0);
+      const same = rows.filter((r) => r.summary.toLowerCase() === row.summary.toLowerCase());
+      expect(same.length, `README table rows share the summary "${row.summary}"`).toBe(1);
+    }
+  });
+
+  it("writes every README summary about the tool the row belongs to", () => {
+    for (const row of readmeRows()) {
+      const tool = tools.find((t) => t.name === row.name);
+      expect(tool, `README table lists an unknown tool ${row.name}`).toBeDefined();
+      const words = contentWords(tool!.description);
+      const shared = [...contentWords(row.summary)].filter((w) => words.has(w));
+      expect(shared.length, `README summary for ${row.name} shares no word with the tool description`).toBeGreaterThan(0);
     }
   });
 });

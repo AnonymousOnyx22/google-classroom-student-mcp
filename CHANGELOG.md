@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added a test that checks the tool table in the README against the tool list in the code, so a new tool cannot land in the code without a row in the README.
+- The optional since_days argument is now part of the docs checks, so the README and llms.txt have to keep naming it for the tool that takes it.
 - get_todo, get_assignments, get_announcements and get_course_materials now print the Classroom page of each item under the title, so the AI can hand the student a direct link to the work instead of only a title.
 - get_course_materials also prints the Drive link of every file attached to a material.
 - Added tests that check the links show up, that the Drive link of an attached file shows up and that no link line is printed when the API sends none.
