@@ -154,7 +154,9 @@ npm run build
 npm test
 ```
 
-Tests run against a fake Google server, so they need no account or network. One test also checks that [llms.txt](./llms.txt) and glama.json still list every tool with the same description.
+Tests run against a fake Google server, so they need no account or network. Other tests check that [llms.txt](./llms.txt) and glama.json still list every tool with the same description, and that the version matches package.json.
+
+The version that `--version` prints and the MCP handshake sends comes from package.json, so bump the version there and nowhere else.
 
 The test runner needs Node 22.12 or newer. The server itself runs on Node 20 or newer.
 
