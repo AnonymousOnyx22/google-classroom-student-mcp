@@ -8,7 +8,7 @@
 
 Ask your AI what's actually left to do in Google Classroom.
 
-This is the Google Classroom MCP server: a free, open source [MCP](https://modelcontextprotocol.io) server that lets Claude, ChatGPT, Cursor and other AI apps read your Classroom classes, assignments, due dates, missing work, grades on returned work with the comments your teachers leave on them, announcements, course materials and a catch up digest. It is **read only**. It can never turn in, edit or delete anything. Not affiliated with Google.
+This is the Google Classroom MCP server: a free, open source [MCP](https://modelcontextprotocol.io) server that lets Claude, ChatGPT, Cursor and other AI apps read your Classroom classes, assignments, due dates, missing work, grades on returned work with the comments your teachers leave on them, the points you need to reach a target grade, announcements, course materials and a catch up digest. It is **read only**. It can never turn in, edit or delete anything. Not affiliated with Google.
 
 Free forever. No sign up and no subscription. Your login details only ever go to Google.
 
@@ -20,6 +20,7 @@ Ask these right after setup:
 - "What's overdue?"
 - "What's due this week across all my classes?"
 - "What did my teacher say about my work?"
+- "What do I need to score to get a 90?"
 - "What's new since yesterday?"
 
 ### Sample answer
@@ -128,6 +129,7 @@ Here are the questions students ask, and the tool that answers each one. The ans
 | "What's overdue?" | `get_missing_assignments` | Work that was due and is still not handed in |
 | "What's due this week across all my classes?" | `get_upcoming_due_dates` | Work that is due soon, soonest first |
 | "What did my teacher say about my work?" | `get_my_grades` | The comment the teacher left on the graded work, with the score and a link to open it in Classroom |
+| "What do I need to score to get a 90?" | `get_target_grade` | The points you need on the work that is left to reach that percent in each class |
 | "What did my teachers post lately?" | `get_announcements` | Recent announcements from every class |
 | "What's new since yesterday?" | `get_whats_new` | New announcements, new grades, overdue work and what is due next |
 
@@ -199,11 +201,12 @@ All tools are read only.
 | `get_missing_assignments` | Past due work you haven't turned in |
 | `get_assignments` | Assignments for a class with due dates and status |
 | `get_my_grades` | Points earned on returned work for each class, with the comment the teacher left |
+| `get_target_grade` | Points needed on the work left to reach a target percent |
 | `get_announcements` | Recent announcements |
 | `get_course_materials` | Materials posted in a class |
 | `get_whats_new` | One catch up digest: new announcements, new grades, overdue work and what is due next |
 
-The same list is in plain text in [llms.txt](./llms.txt), one line per tool with its description and the optional arguments it takes. That file ships with the package, so site indexes and AI apps that read plain text files can pick it up.
+The same list is in plain text in [llms.txt](./llms.txt), one line per tool with its description and the arguments it takes. That file ships with the package, so site indexes and AI apps that read plain text files can pick it up.
 
 get_todo, get_assignments, get_announcements and get_course_materials print the Classroom page of each item under the title, so the AI can hand the student a direct link to the work. get_course_materials also prints the Drive link of every file attached to a material. Classroom sends a link only for published items.
 
@@ -211,7 +214,9 @@ Google Classroom has no overall course grade, so `get_my_grades` adds up graded 
 
 `get_my_grades` and `get_whats_new` print what the teacher wrote when they returned the work, under the score, with the Classroom page of the work. `get_my_grades` lists the graded work that has a comment under each class.
 
-`get_todo`, `get_upcoming_due_dates`, `get_missing_assignments`, `get_my_grades` and `get_whats_new` accept an optional list of course IDs (`course_ids`), so you can ask about a few classes only instead of all of them. `get_upcoming_due_dates` and `get_whats_new` also accept an optional number of days to look ahead (`days_ahead`). `get_whats_new` also accepts an optional number of days to look back (`since_days`), which defaults to 7 days. `get_announcements` accepts course IDs (`course_ids`) too.
+`get_todo`, `get_upcoming_due_dates`, `get_missing_assignments`, `get_my_grades`, `get_target_grade` and `get_whats_new` accept an optional list of course IDs (`course_ids`), so you can ask about a few classes only instead of all of them. `get_upcoming_due_dates` and `get_whats_new` also accept an optional number of days to look ahead (`days_ahead`). `get_whats_new` also accepts an optional number of days to look back (`since_days`), which defaults to 7 days. `get_announcements` accepts course IDs (`course_ids`) too. `get_target_grade` takes a required `target_percent` from 0 to 100, which is the class percent you want.
+
+`get_target_grade` adds up the points earned on graded work and the points the work that is left is worth. It then works out how many of those points you need to reach `target_percent`. Work counts as left when it has points and no grade yet, and work the teacher already returned without a grade is left out. If the target needs more points than the work left is worth, the answer says so and gives the best percent you can still reach. The server only sees the points on each piece of work, not any weighting the teacher may use, so the answer counts every point the same.
 
 `get_whats_new` is the catch up digest. It prints new announcements, new grades with the comment the teacher left, overdue work and what is due next in one answer. An announcement counts as new when it was posted or changed inside the window. The date of a new grade comes from the teacher's comment on the work when there is one, otherwise from the last change to the assignment. The comment itself is printed under the grade.
 
@@ -227,7 +232,7 @@ Google Classroom and D2L Brightspace are different platforms, so they need diffe
 | After setup | While your Cloud app is in testing mode, Google expires the refresh token every 7 days, so you run the login command again now and then | It stays signed in quietly, and a browser window only opens when your school asks you to sign in again |
 | What your school has to do | Nothing. Your own Google account and your own Cloud project are enough, though a school admin can block third party apps | Nothing. It uses your own student sign in, so no API key from an administrator is needed |
 | Classes and work | Active classes, then every assignment with its due date, its points, whether you turned it in and a link to open it in Classroom | Enrolled courses, then assignments and quizzes with the real submission status of each one |
-| Grades | Points earned on returned work, added up per class. Google Classroom has no overall grade, so there is no overall percentage | Grade breakdown per course with points, percentages and instructor comments, plus a target grade tool that tells you what you need on the work that is left |
+| Grades | Points earned on returned work, added up per class, plus a target grade tool that says how many points you need on the work that is left. Google Classroom has no overall grade, so the percentage is only over graded work | Grade breakdown per course with points, percentages and instructor comments, plus a target grade tool that tells you what you need on the work that is left |
 | News | Recent announcements, and a catch up digest with new announcements, new grades, overdue work and what is due next | Recent announcements, and a catch up digest that also covers newly marked work, unread discussions and quizzes you have not tried yet |
 | Course files | Materials posted in a class, each with a link to open it and the Drive link of every attached file | Course modules, files, links, the syllabus, the files attached to an assignment, discussions, class lists and calendar events such as exams and labs. It can also save a course file to a folder you pick and build a calendar file of your deadlines |
 | Read only | Yes, it can never turn in, edit or delete anything | Yes, it only reads from Brightspace |

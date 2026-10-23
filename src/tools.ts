@@ -6,6 +6,7 @@ type Api = ClassroomApi;
 
 const courseId = z.union([z.string(), z.number()]).describe("Classroom course ID. Use get_my_courses to find it.");
 const courseIds = z.array(courseId).optional().describe("Classroom course IDs to check. Leave empty for all active classes.");
+const targetPercent = z.number().min(0).max(100).describe("The class percent you want, from 0 to 100. For example 90.");
 const daysAhead = z.number().int().positive().optional().describe("Only show work due within this many days from now. Leave empty for every future due date.");
 const sinceDays = z.number().int().positive().optional().describe("How many days back to look for new announcements and new grades. Leave empty for the last 7 days.");
 const dueAhead = z.number().int().positive().optional().describe("How many days ahead to look for work that is due next. Leave empty for the next 14 days.");
@@ -175,6 +176,50 @@ function gradedItem(item: WorkItem, head: string): string {
   return lines.join("\n");
 }
 
+/** One decimal place, with a whole number printed without the .0. */
+function fmtPoints(n: number): string {
+  const rounded = Math.round(n * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+/** One decimal place, the way the grade tools print percentages. */
+function fmtPercent(n: number): string {
+  return `${n.toFixed(1)}%`;
+}
+
+/**
+ * The points earned so far and the points still needed on the work that has
+ * no grade yet, for one class and one target percent. Classroom sends points
+ * on each piece of work but no overall grade, so this is straight arithmetic
+ * on those points. Work the teacher already returned without a grade is left
+ * out, because it will not add points.
+ */
+function targetLine(name: string, work: WorkItem[], target: number): string {
+  const graded = work.filter((i) => i.grade != null && i.maxPoints);
+  const left = work.filter((i) => i.grade == null && i.maxPoints && i.state !== "RETURNED");
+  if (!graded.length && !left.length) return `${name} no graded work and no work left to score`;
+  const earned = graded.reduce((n, i) => n + (i.grade ?? 0), 0);
+  const possible = graded.reduce((n, i) => n + (i.maxPoints ?? 0), 0);
+  const remaining = left.reduce((n, i) => n + (i.maxPoints ?? 0), 0);
+  const now = possible ? (earned / possible) * 100 : 0;
+  const head = graded.length
+    ? `${name} ${fmtPoints(earned)}/${fmtPoints(possible)} points on ${graded.length} graded item${graded.length === 1 ? "" : "s"} now (${fmtPercent(now)})`
+    : `${name} no graded work yet`;
+  const goal = fmtPercent(target);
+  if (!remaining) {
+    return `${head}. Target ${goal}: no work left to score, so the percent on this work stays at ${fmtPercent(now)}.`;
+  }
+  const needed = (target / 100) * (possible + remaining) - earned;
+  if (needed <= 0) {
+    return `${head}. Target ${goal}: already there, so the ${fmtPoints(remaining)} points of work left can only help.`;
+  }
+  if (needed > remaining) {
+    const best = ((earned + remaining) / (possible + remaining)) * 100;
+    return `${head}. Target ${goal}: ${fmtPoints(needed)} points needed on the ${fmtPoints(remaining)} points of work left, which is more than that work is worth. The best you can reach is ${fmtPercent(best)}.`;
+  }
+  return `${head}. Target ${goal}: ${fmtPoints(needed)} points needed on the ${fmtPoints(remaining)} points of work left, which is ${fmtPercent((needed / remaining) * 100)} on that work.`;
+}
+
 export const tools: ToolDef<Api>[] = [
   {
     name: "get_my_courses",
@@ -274,6 +319,20 @@ export const tools: ToolDef<Api>[] = [
         lines.push(feedback ? `${head}\n${feedback}` : head);
       }
       let text = bullets(lines, "No grades found.");
+      if (total > 15) text += `\nshowing first 15 of ${total} classes`;
+      return text;
+    },
+  },
+  {
+    name: "get_target_grade",
+    title: "Target grade",
+    description: "Points needed on the work that is left to reach a target percent in each class. Adds up the points earned on graded work and the points the work left is worth, then says how many of those points you still need. target_percent is the percent you want, from 0 to 100. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'What do I need to score to get a 90?' or 'Can I still get an A in this class?'",
+    inputSchema: { course_ids: courseIds, target_percent: targetPercent },
+    run: async ({ course_ids, target_percent }, api) => {
+      const { courses, total } = await coursesFor(api, course_ids);
+      const perCourse = await Promise.all(courses.map((c) => courseWork(api, c)));
+      const lines = perCourse.map((list, idx) => targetLine(courses[idx].name, list, target_percent));
+      let text = bullets(lines, "No target grade to work out.");
       if (total > 15) text += `\nshowing first 15 of ${total} classes`;
       return text;
     },

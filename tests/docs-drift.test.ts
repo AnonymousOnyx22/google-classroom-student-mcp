@@ -10,7 +10,7 @@ const expected = tools.map((t) => ({ name: t.name, description: t.description })
 const expectedNames = expected.map((t) => t.name);
 
 /** Optional arguments that llms.txt talks about in its note under the tool list. */
-const NOTED_PARAMS = ["course_ids", "days_ahead", "since_days"];
+const NOTED_PARAMS = ["course_ids", "days_ahead", "since_days", "target_percent"];
 
 /** One tool line in llms.txt, for example "- get_todo: What is left to turn in." */
 const TOOL_LINE = /^- ([a-z0-9_]+): (.*)$/;

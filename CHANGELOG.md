@@ -2,6 +2,9 @@
 
 ## 0.1.5
 
+- Added get_target_grade, which adds up the points earned on graded work and the points the work that is left is worth, then says how many of those points you need on the work that is left to reach a target percent. It takes an optional course_ids list and a required target_percent from 0 to 100.
+- The answer says when the target needs more points than the work left is worth and gives the best percent you can still reach, and it leaves out work the teacher returned without a grade.
+- Added tests for the points needed, a target that is out of reach, a target already met, a class with no points left and a class with no work at all.
 - get_my_grades and get_whats_new now print the comment the teacher left when they returned the work, under the score, with the Classroom page of the work. The comment comes from the same assigned comment the server already read for the date of the grade.
 - Added tests that check the comment shows up, that the HTML tags come off it and that no comment line is printed when the teacher wrote nothing.
 - The README now has a Questions students ask section. It lists the questions students ask, the tool that answers each one and what the answer holds.

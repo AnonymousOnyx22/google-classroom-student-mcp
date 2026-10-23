@@ -121,7 +121,7 @@ async function call(client: Client, name: string, args: Record<string, unknown> 
 describe("google-classroom-student-mcp", () => {
   it("exposes only read-only tools", async () => {
     const { tools } = await (await connect()).listTools();
-    expect(tools.length).toBe(9);
+    expect(tools.length).toBe(10);
     for (const t of tools) expect(t.annotations?.readOnlyHint).toBe(true);
   });
 
@@ -187,6 +187,50 @@ describe("google-classroom-student-mcp", () => {
     expect(text).toContain("Math 4/5 points on 1 graded items (80.0%)");
     expect(text).toContain("English 90/100");
     expect(text).toContain("Biology no graded work yet");
+  });
+
+  it("works out the points needed on the work that is left", async () => {
+    const { text } = await call(await connect(), "get_target_grade", { course_ids: ["100"], target_percent: 90 });
+    expect(text).toBe(
+      "- Math 4/5 points on 1 graded item now (80.0%). Target 90.0%: 72.5 points needed on the 80 points of work left, which is 90.6% on that work.",
+    );
+  });
+
+  it("says when a target is out of reach or already met", async () => {
+    const c = await connect();
+    const high = (await call(c, "get_target_grade", { course_ids: ["200"], target_percent: 95 })).text;
+    expect(high).toContain("English 90/100 points on 1 graded item now (90.0%)");
+    expect(high).toContain("28.8 points needed on the 25 points of work left, which is more than that work is worth.");
+    expect(high).toContain("The best you can reach is 92.0%.");
+    const low = (await call(c, "get_target_grade", { course_ids: ["200"], target_percent: 70 })).text;
+    expect(low).toContain("already there, so the 25 points of work left can only help");
+  });
+
+  it("says the percent stays when no work is left and leaves returned work out", async () => {
+    const api: any = {
+      get: async () => ({}),
+      list: async (path: string) => {
+        if (path === "/v1/courses") return [{ id: "1", name: "Math" }];
+        if (path.endsWith("/studentSubmissions"))
+          return [
+            { courseWorkId: "w1", state: "RETURNED", assignedGrade: 8 },
+            { courseWorkId: "w2", state: "RETURNED" },
+          ];
+        return [
+          { id: "w1", title: "Quiz 1", maxPoints: 10 },
+          { id: "w2", title: "Quiz 2", maxPoints: 20 },
+        ];
+      },
+    };
+    const tool = tools.find((t) => t.name === "get_target_grade")!;
+    const out = await tool.run({ target_percent: 90 }, api);
+    expect(out).toContain("Math 8/10 points on 1 graded item now (80.0%)");
+    expect(out).toContain("no work left to score, so the percent on this work stays at 80.0%");
+  });
+
+  it("says when a class has no points to work with", async () => {
+    const { text } = await call(await connect(), "get_target_grade", { target_percent: 90 });
+    expect(text).toContain("Biology no graded work and no work left to score");
   });
 
   it("prints the comment the teacher left on returned work", async () => {

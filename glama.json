@@ -29,6 +29,10 @@
       "description": "Grades on returned work for each class, with the comment the teacher left on the work. Google Classroom has no overall grade, so this adds up graded work only. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'How am I doing in my classes?' or 'What grades have I gotten back?'"
     },
     {
+      "name": "get_target_grade",
+      "description": "Points needed on the work that is left to reach a target percent in each class. Adds up the points earned on graded work and the points the work left is worth, then says how many of those points you still need. target_percent is the percent you want, from 0 to 100. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'What do I need to score to get a 90?' or 'Can I still get an A in this class?'"
+    },
+    {
       "name": "get_announcements",
       "description": "Recent announcements, each with a link to open it in Classroom. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'Did my teacher post anything new?' or 'What did my teacher announce?'"
     },
