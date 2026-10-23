@@ -5,6 +5,7 @@
 ## Setup
 - Needs GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_REFRESH_TOKEN.
 - Run the one time login command from the README to get a refresh token.
+- Run `npx google-classroom-student-mcp setup` to print a ready to paste mcpServers block for Claude Desktop, Claude Code, Cursor and other MCP apps.
 - Run with npx -y google-classroom-student-mcp. Run `npx google-classroom-student-mcp doctor` to check the setup.
 
 ## Tools (all read only)

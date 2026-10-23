@@ -4,6 +4,7 @@ import { createTokenProvider } from "./auth.js";
 import { createClassroomApi } from "./classroom.js";
 import { login } from "./login.js";
 import { createServer, VERSION } from "./server.js";
+import { setupText } from "./setup.js";
 
 function usage(): void {
   console.log(`google-classroom-student-mcp ${VERSION}
@@ -18,6 +19,7 @@ Environment
 
 Commands
   (no command)       Start the MCP server over stdio
+  setup              Print the MCP config to paste into your AI app
   login              One time sign in. Needs GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
   doctor             Check that your credentials work
   --help, --version`);
@@ -27,6 +29,8 @@ async function main(): Promise<void> {
   const cmd = process.argv[2];
   if (cmd === "--help" || cmd === "-h") return usage();
   if (cmd === "--version" || cmd === "-v") return console.log(VERSION);
+
+  if (cmd === "setup") return console.log(setupText(process.env));
 
   if (cmd === "login") {
     const id = process.env.GOOGLE_CLIENT_ID;

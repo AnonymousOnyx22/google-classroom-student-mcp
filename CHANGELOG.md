@@ -2,6 +2,9 @@
 
 ## 0.1.5
 
+- Added a setup command, `npx google-classroom-student-mcp setup`, which prints ready to paste mcpServers config blocks for Claude Desktop, Claude Code, Cursor and other MCP apps. It fills in the three Google values when they are set in your environment and leaves placeholders when they are not.
+- The README Quick start, the setup steps, the comparison with the Brightspace server and llms.txt now point at the setup command.
+- Added tests that check the setup output is valid JSON for each app, names the config file to paste it into and fills in the values from the environment.
 - Added get_target_grade, which adds up the points earned on graded work and the points the work that is left is worth, then says how many of those points you need on the work that is left to reach a target percent. It takes an optional course_ids list and a required target_percent from 0 to 100.
 - The answer says when the target needs more points than the work left is worth and gives the best percent you can still reach, and it leaves out work the teacher returned without a grade.
 - Added tests for the points needed, a target that is out of reach, a target already met, a class with no points left and a class with no work at all.

@@ -37,7 +37,7 @@ Every line has the assignment title, the class and the due date. Work you alread
 
 ## Quick start with npx
 
-Install the Google Classroom MCP server with npx, then add it to your AI app. Pick your app below.
+Install the Google Classroom MCP server with npx, then add it to your AI app. Run `npx google-classroom-student-mcp setup` to print the config blocks below, with the three Google values filled in when they are set in your environment. Pick your app.
 
 ### Claude Desktop
 
@@ -111,7 +111,7 @@ GOOGLE_CLIENT_ID=your-id GOOGLE_CLIENT_SECRET=your-secret npx google-classroom-s
 
 Open the link it prints, approve read only access, and copy the three values it prints.
 
-6. Add them to your AI app's MCP config, using one of the formats from the Quick start above.
+6. Add them to your AI app's MCP config. Run `npx google-classroom-student-mcp setup` and paste the block for your app, or use one of the formats from the Quick start above.
 
 7. Restart your AI app and ask "what's due this week?"
 
@@ -227,7 +227,7 @@ Google Classroom and D2L Brightspace are different platforms, so they need diffe
 | | Google Classroom MCP (this one) | Brightspace MCP |
 | --- | --- | --- |
 | Platform | Google Classroom, the one inside Google Workspace for Education | D2L Brightspace, common in colleges and universities |
-| Install | `npx -y google-classroom-student-mcp`, then three values in your app config | `npx brightspace-d2l-mcp setup`, which writes the config for you |
+| Install | `npx -y google-classroom-student-mcp setup`, which prints the config for your app to paste, with the three values filled in when they are in your environment | `npx brightspace-d2l-mcp setup`, which writes the config for you |
 | Sign in | You make your own OAuth app in the Google Cloud console, run one time sign in, then paste the client ID, the client secret and the refresh token | You pick your school and sign in with your own school account in a browser window. Any sign in method your school uses works, and your password is never stored |
 | After setup | While your Cloud app is in testing mode, Google expires the refresh token every 7 days, so you run the login command again now and then | It stays signed in quietly, and a browser window only opens when your school asks you to sign in again |
 | What your school has to do | Nothing. Your own Google account and your own Cloud project are enough, though a school admin can block third party apps | Nothing. It uses your own student sign in, so no API key from an administrator is needed |
