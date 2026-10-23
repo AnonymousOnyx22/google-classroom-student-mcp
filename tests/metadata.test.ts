@@ -4,6 +4,17 @@ import { readFileSync } from "node:fs";
 /** The phrase people search for on npm. */
 const PHRASE = "google classroom mcp";
 
+/** The longer phrases students type into npm search. */
+const LONG_TAIL_KEYWORDS = [
+  "assignment tracker",
+  "homework tracker",
+  "classroom due dates tracker",
+  "lms deadline tracker",
+];
+
+/** How many keywords the list has today. It should only ever grow. */
+const MIN_KEYWORDS = 85;
+
 function readRootFile(name: string): string {
   return readFileSync(new URL(`../${name}`, import.meta.url), "utf8");
 }
@@ -33,6 +44,25 @@ describe("package metadata keeps the google classroom mcp phrase", () => {
   it("keeps the registry description within 100 characters", () => {
     const server = readRootJson("server.json");
     expect(server.description.length).toBeLessThanOrEqual(100);
+  });
+
+  it("keeps the long tail phrases students search for", () => {
+    const pkg = readRootJson("package.json");
+    const keywords = pkg.keywords.map((k: string) => k.toLowerCase());
+    for (const phrase of LONG_TAIL_KEYWORDS) {
+      expect(keywords, `package.json keywords are missing "${phrase}"`).toContain(phrase);
+    }
+  });
+
+  it("keeps the keyword list from shrinking", () => {
+    const pkg = readRootJson("package.json");
+    expect(pkg.keywords.length).toBeGreaterThanOrEqual(MIN_KEYWORDS);
+  });
+
+  it("lists each keyword only once", () => {
+    const pkg = readRootJson("package.json");
+    const keywords = pkg.keywords.map((k: string) => k.toLowerCase());
+    expect(new Set(keywords).size).toBe(keywords.length);
   });
 
   it("keeps the name and the binary name unchanged", () => {
