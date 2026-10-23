@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.5
 
 - get_my_grades and get_whats_new now print the comment the teacher left when they returned the work, under the score, with the Classroom page of the work. The comment comes from the same assigned comment the server already read for the date of the grade.
 - Added tests that check the comment shows up, that the HTML tags come off it and that no comment line is printed when the teacher wrote nothing.
