@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6
+
+- Add get_target_grade tool with tests and docs
+- Add setup command that prints MCP config for each app
+- Add long tail keywords and metadata tests to package.json
+- Update the table of sibling MCP servers in the README
+- Add a draft: Publish a landing page and ask the MCP community for stars
+
 ## 0.1.5
 
 - Added a setup command, `npx google-classroom-student-mcp setup`, which prints ready to paste mcpServers config blocks for Claude Desktop, Claude Code, Cursor and other MCP apps. It fills in the three Google values when they are set in your environment and leaves placeholders when they are not.
