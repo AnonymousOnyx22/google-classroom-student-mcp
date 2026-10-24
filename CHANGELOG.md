@@ -2,11 +2,8 @@
 
 ## 0.1.6
 
-- Add get_target_grade tool with tests and docs
-- Add setup command that prints MCP config for each app
-- Add long tail keywords and metadata tests to package.json
-- Update the table of sibling MCP servers in the README
-- Add a draft: Publish a landing page and ask the MCP community for stars
+- New tool get_target_grade answers "what do I need to score to get a 90?". Give it the class percent you want (target_percent, 0 to 100) and it works out the points you need on the work that is left in each class. It takes the optional course_ids filter like the other tools.
+- The README now ends with a table of the other free student MCP servers, so you can find the one for your school's system.
 
 ## 0.1.5
 
