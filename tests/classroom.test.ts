@@ -268,6 +268,16 @@ describe("google-classroom-student-mcp", () => {
     expect((await call(c, "get_course_materials", { course_id: "100" })).text).toContain("Slides week 3");
   });
 
+  it("filters announcements to the last N days with since_days", async () => {
+    const c = await connect();
+    const recent = (await call(c, "get_announcements", { since_days: 7 })).text;
+    expect(recent).toContain("Bring your textbook");
+    expect(recent).not.toContain("Test Friday");
+    const all = (await call(c, "get_announcements")).text;
+    expect(all).toContain("Bring your textbook");
+    expect(all).toContain("Test Friday");
+  });
+
   it("prints the web page of each assignment, announcement and material", async () => {
     const c = await connect();
     const todo = (await call(c, "get_todo")).text;
@@ -310,6 +320,13 @@ describe("google-classroom-student-mcp", () => {
     expect(text).toMatch(/Project \(Math\) due /);
     expect(text).toMatch(/Outline \(English\) due /);
     expect(text).not.toContain("Quiz 2");
+  });
+
+  it("prints the Classroom link under each new announcement in the digest", async () => {
+    const c = await connect();
+    const digest = (await call(c, "get_whats_new")).text;
+    expect(digest).toContain("Bring your textbook");
+    expect(digest).toContain("link: https://classroom.google.com/c/Math/course/100/announcements/a1");
   });
 
   it("takes the window and the class list for the digest", async () => {

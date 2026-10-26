@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- get_announcements now takes an optional since_days number, so it only shows announcements updated within that many days back from now. Leave it out to keep showing every recent announcement.
+- get_whats_new now prints the Classroom page link under each new announcement, alongside the links it already prints under new grades.
+
 ## 0.1.6
 
 - New tool get_target_grade answers "what do I need to score to get a 90?". Give it the class percent you want (target_percent, 0 to 100) and it works out the points you need on the work that is left in each class. It takes the optional course_ids filter like the other tools.

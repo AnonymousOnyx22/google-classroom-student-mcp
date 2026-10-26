@@ -34,7 +34,7 @@
     },
     {
       "name": "get_announcements",
-      "description": "Recent announcements, each with a link to open it in Classroom. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'Did my teacher post anything new?' or 'What did my teacher announce?'"
+      "description": "Recent announcements, each with a link to open it in Classroom. Pass course_ids or since_days to limit how far back they go, or leave empty for all active classes. Use this when the user asks 'Did my teacher post anything new?' or 'What did my teacher announce?'"
     },
     {
       "name": "get_course_materials",

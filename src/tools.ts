@@ -9,6 +9,7 @@ const courseIds = z.array(courseId).optional().describe("Classroom course IDs to
 const targetPercent = z.number().min(0).max(100).describe("The class percent you want, from 0 to 100. For example 90.");
 const daysAhead = z.number().int().positive().optional().describe("Only show work due within this many days from now. Leave empty for every future due date.");
 const sinceDays = z.number().int().positive().optional().describe("How many days back to look for new announcements and new grades. Leave empty for the last 7 days.");
+const sinceDaysAnnouncements = z.number().int().positive().optional().describe("Only show announcements updated within this many days back from now. Leave empty to show every recent announcement.");
 const dueAhead = z.number().int().positive().optional().describe("How many days ahead to look for work that is due next. Leave empty for the next 14 days.");
 
 interface Course {
@@ -340,19 +341,25 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_announcements",
     title: "Announcements",
-    description: "Recent announcements, each with a link to open it in Classroom. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'Did my teacher post anything new?' or 'What did my teacher announce?'",
-    inputSchema: { course_ids: z.array(courseId).optional() },
-    run: async ({ course_ids }, api) => {
+    description: "Recent announcements, each with a link to open it in Classroom. Pass course_ids or since_days to limit how far back they go, or leave empty for all active classes. Use this when the user asks 'Did my teacher post anything new?' or 'What did my teacher announce?'",
+    inputSchema: { course_ids: courseIds, since_days: sinceDaysAnnouncements },
+    run: async ({ course_ids, since_days }, api) => {
       const courses = await activeCourses(api);
       const allIds: string[] = (course_ids?.length ? course_ids : courses.map((c) => c.id)).map(String);
       const total = allIds.length;
       const ids: string[] = allIds.slice(0, 15);
       const names = new Map(courses.map((c) => [String(c.id), c.name]));
+      const from = since_days == null ? 0 : Date.now() - since_days * 86400000;
       const rows = (
         await Promise.all(
           ids.map(async (id) => {
             const list = await api.list<any>(`/v1/courses/${id}/announcements`, "announcements", { announcementStates: "PUBLISHED" }, 1);
-            return list.slice(0, 5).map((a) => ({ id, a }));
+            return list
+              .filter((a) => {
+                const when = stampOf(a.updateTime ?? a.creationTime);
+                return when == null || when.getTime() >= from;
+              })
+              .slice(0, 5).map((a) => ({ id, a }));
           }),
         )
       ).flat();
@@ -434,7 +441,7 @@ export const tools: ToolDef<Api>[] = [
           `New announcements (last ${back} days)`,
           fresh.map((x) => {
             const note = stripHtml(x.a.text, 200).replace(/\n/g, " ");
-            return `${x.course} (${fmtDate(x.when.toISOString())})${note ? ` ${note}` : ""}`;
+            return linked(`${x.course} (${fmtDate(x.when.toISOString())})${note ? ` ${note}` : ""}`, x.a.alternateLink);
           }),
           "No new announcements.",
         ),
