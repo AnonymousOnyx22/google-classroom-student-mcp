@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.7
 
 - get_announcements now takes an optional since_days number, so it only shows announcements updated within that many days back from now. Leave it out to keep showing every recent announcement.
 - get_whats_new now prints the Classroom page link under each new announcement, alongside the links it already prints under new grades.
