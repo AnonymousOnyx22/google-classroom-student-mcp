@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- New tool get_assignment_details answers "what does this assignment ask for?". Give it the course ID and the assignment ID and it prints the teacher's description, the files and links attached to the assignment, its due date, its points and your status, with the Classroom page of the assignment under it. get_assignments lists only the title, due date, points and status, so use get_assignment_details when you need the description and the attachments.
 - get_my_grades now adds a weighted percent under each class that uses grading categories with weights in Classroom, for example Homework and Exams. Classes without weights get a short note that the percent is plain points. The points and percent it printed before are unchanged.
 - Work with a due date but no due time now counts as due at the end of that day in your own time zone, not in UTC. This fixes work shown as overdue while it is still due that evening. Set CLASSROOM_TIMEZONE (for example America/Toronto) to choose the zone. Otherwise the zone of the computer running the server is used.
 - Requests to Google now retry a few times with a growing wait when Google answers with a rate limit or a server error, and they respect its Retry-After header.

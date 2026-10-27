@@ -62,6 +62,10 @@ beforeAll(async () => {
         { id: "w2", title: "Quiz 2", ...dueParts(2), maxPoints: 20, alternateLink: "https://classroom.google.com/c/Math/course/100/courseWork/w2" },
         { id: "w3", title: "Project", ...dueParts(5, false), maxPoints: 50, alternateLink: "https://classroom.google.com/c/Math/course/100/courseWork/w3" },
         { id: "w4", title: "Reading", maxPoints: 5, updateTime: new Date(Date.now() - 2 * day).toISOString() },
+        { id: "w5", title: "Lab report", description: "<p>Measure the speed of a toy car on the ramp. Answer questions 1 to 4.</p>", ...dueParts(1), maxPoints: 30, alternateLink: "https://classroom.google.com/c/Math/course/100/courseWork/w5", materials: [
+          { title: "Lab sheet", driveFile: { driveFile: { title: "Lab sheet.pdf", alternateLink: "https://drive.google.com/file/d/lab123" } } },
+          { link: { url: "https://example.com/ramp-video", title: "Ramp video" } },
+        ] },
       ] });
     if (p === "/v1/courses/100/courseWork/-/studentSubmissions")
       return send(200, { studentSubmissions: [
@@ -69,6 +73,7 @@ beforeAll(async () => {
         { courseWorkId: "w2", state: "TURNED_IN" },
         { courseWorkId: "w3", state: "CREATED" },
         { courseWorkId: "w4", state: "RETURNED", assignedGrade: 4, assignedComment: { text: "<p>Nice work,<br>watch your signs.</p>", creationTime: new Date(Date.now() - 2 * day).toISOString() } },
+        { courseWorkId: "w5", state: "NEW" },
       ] });
     if (p === "/v1/courses/200/courseWork") return send(200, { courseWork: [
       { id: "e1", title: "Essay", ...dueParts(-10), maxPoints: 100, updateTime: new Date(Date.now() - 30 * day).toISOString(), alternateLink: "https://classroom.google.com/c/English/course/200/courseWork/e1" },
@@ -121,7 +126,7 @@ async function call(client: Client, name: string, args: Record<string, unknown> 
 describe("google-classroom-student-mcp", () => {
   it("exposes only read-only tools", async () => {
     const { tools } = await (await connect()).listTools();
-    expect(tools.length).toBe(11);
+    expect(tools.length).toBe(12);
     for (const t of tools) expect(t.annotations?.readOnlyHint).toBe(true);
   });
 
@@ -197,6 +202,23 @@ describe("google-classroom-student-mcp", () => {
     expect(text).toMatch(/Reading.*graded 4\/5/);
   });
 
+  it("prints the description, attachments and status of one assignment", async () => {
+    const c = await connect();
+    const { text } = await call(c, "get_assignment_details", { course_id: "100", course_work_id: "w5" });
+    expect(text).toContain("title: Lab report");
+    expect(text).toContain("description: Measure the speed of a toy car on the ramp. Answer questions 1 to 4.");
+    expect(text).toContain("file: Lab sheet.pdf, https://drive.google.com/file/d/lab123");
+    expect(text).toContain("link: https://example.com/ramp-video");
+    expect(text).toContain("points: 30");
+    expect(text).toContain("status: not turned in");
+    expect(text).toContain("link: https://classroom.google.com/c/Math/course/100/courseWork/w5");
+    expect(text).not.toContain("<p>");
+    const missing = await call(c, "get_assignment_details", { course_id: "100", course_work_id: "nope" });
+    expect(missing.isError).toBe(true);
+    expect(missing.text).toContain("was not found");
+    expect(missing.text).toContain("Check the course and assignment ID");
+  });
+
   it("adds up graded work per class and says when there is none", async () => {
     const { text } = await call(await connect(), "get_my_grades");
     expect(text).toContain("Math 4/5 points on 1 graded items (80.0%)");
@@ -207,7 +229,7 @@ describe("google-classroom-student-mcp", () => {
   it("works out the points needed on the work that is left", async () => {
     const { text } = await call(await connect(), "get_target_grade", { course_ids: ["100"], target_percent: 90 });
     expect(text).toBe(
-      "- Math 4/5 points on 1 graded item now (80.0%). Target 90.0%: 72.5 points needed on the 80 points of work left, which is 90.6% on that work.",
+      "- Math 4/5 points on 1 graded item now (80.0%). Target 90.0%: 99.5 points needed on the 110 points of work left, which is 90.5% on that work.",
     );
   });
 

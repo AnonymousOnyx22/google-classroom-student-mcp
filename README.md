@@ -128,6 +128,7 @@ Here are the questions students ask, and the tool that answers each one. The ans
 | Your question | Tool | What the answer holds |
 | --- | --- | --- |
 | "What do I still need to turn in?" | `get_todo` | Every assignment you have not handed in, with a link to open it in Classroom |
+| "What does this assignment ask for?" | `get_assignment_details` | The teacher's description, the files and links attached to it, its due date, points and your status |
 | "Can you give me my due dates as a calendar file?" | `export_due_dates_calendar` | Build an ICS calendar file of upcoming due dates |
 | "What's overdue?" | `get_missing_assignments` | Work that was due and is still not handed in |
 | "What's due this week across all my classes?" | `get_upcoming_due_dates` | Work that is due soon, soonest first |
@@ -204,6 +205,7 @@ All tools are read only.
 | `get_upcoming_due_dates` | Work due soon, soonest first |
 | `get_missing_assignments` | Past due work you haven't turned in |
 | `get_assignments` | Assignments for a class with due dates and status |
+| `get_assignment_details` | Everything about one assignment: description, attachments, due date, points and status |
 | `get_my_grades` | Points earned on returned work for each class, with the comment the teacher left |
 | `get_target_grade` | Points needed on the work left to reach a target percent |
 | `get_announcements` | Recent announcements |
@@ -212,7 +214,7 @@ All tools are read only.
 
 The same list is in plain text in [llms.txt](./llms.txt), one line per tool with its description and the arguments it takes. That file ships with the package, so site indexes and AI apps that read plain text files can pick it up.
 
-get_todo, get_assignments, get_announcements and get_course_materials print the Classroom page of each item under the title, so the AI can hand the student a direct link to the work. get_course_materials also prints the Drive link of every file attached to a material. Classroom sends a link only for published items.
+get_todo, get_assignments, get_assignment_details, get_announcements and get_course_materials print the Classroom page of each item under the title, so the AI can hand the student a direct link to the work. get_course_materials also prints the Drive link of every file attached to a material. Classroom sends a link only for published items.
 
 Google Classroom has no overall course grade, so `get_my_grades` adds up graded work only and says so. When a class weights its work by grading category, it also prints a weighted percent, using only the categories that have graded work. `get_target_grade` still uses plain points.
 

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { ClassroomApi } from "./classroom.js";
 import { type ToolDef, bullets, fmtDate, stripHtml } from "./core/tools.js";
+import { ApiError } from "./core/http.js";
 import { buildIcs } from "./core/ics.js";
 
 type Api = ClassroomApi;
@@ -197,12 +198,30 @@ function driveFiles(material: any): string[] {
   return out;
 }
 
+/**
+ * The files and links attached to an assignment, one line each with the link
+ * that opens the file. Classroom nests the file inside the shared file
+ * record, and older records hold it one level higher.
+ */
+function attachmentLines(work: any): string[] {
+  const out: string[] = [];
+  for (const m of work?.materials ?? []) {
+    const file = m?.driveFile?.driveFile ?? m?.driveFile;
+    if (file?.alternateLink) {
+      out.push(`  file: ${file.title ? `${file.title}, ` : ""}${file.alternateLink}`);
+      continue;
+    }
+    if (m?.link?.url) out.push(`  link: ${m.link.url}`);
+  }
+  return out;
+}
+
 /** A titled part of the digest, with one bullet per line. */
 function section(title: string, lines: string[], empty: string): string {
   return `${title}\n${bullets(lines, empty)}`;
 }
 
-function statusOf(i: WorkItem): string {
+function statusOf(i: Pick<WorkItem, "state" | "late" | "grade" | "maxPoints">): string {
   if (i.state === "TURNED_IN") return i.late ? "turned in late" : "turned in";
   if (i.state === "RETURNED") return i.grade != null ? `graded ${i.grade}/${i.maxPoints ?? "?"}` : "returned";
   return OPEN.has(i.state) ? "not turned in" : i.state.toLowerCase();
@@ -390,6 +409,33 @@ export const tools: ToolDef<Api>[] = [
         items.map((i) => linked(`${i.title} due ${dueText(i)}${i.maxPoints ? ` (${i.maxPoints} pts)` : ""} ${statusOf(i)}`, i.link)),
         "No assignments found.",
       );
+    },
+  },
+  {
+    name: "get_assignment_details",
+    title: "Assignment details",
+    description: "Everything about one assignment: what the teacher wrote in the description, the files and links attached to it, its due date, points and your status. Pass the course ID and the assignment ID. Use this when the user asks 'What does this assignment ask for?' or 'What do I need to turn in?' about one specific assignment.",
+    inputSchema: { course_id: courseId, course_work_id: z.union([z.string(), z.number()]).describe("The assignment ID. Use get_assignments to find it.") },
+    run: async ({ course_id, course_work_id }, api) => {
+      const id = String(course_work_id);
+      const [work, sub] = await Promise.all([
+        api.list<any>(`/v1/courses/${course_id}/courseWork`, "courseWork", { courseWorkStates: "PUBLISHED" }),
+        api.list<any>(`/v1/courses/${course_id}/courseWork/-/studentSubmissions`, "studentSubmissions", { userId: "me" }),
+      ]);
+      const item = work.find((w) => String(w.id) === id);
+      if (!item) throw new ApiError(`Assignment ${id} was not found in this course. Check the course and assignment ID.`, 404);
+      const s = sub.find((x) => String(x.courseWorkId) === id);
+      const { due, hasTime } = parseDue(item);
+      const lines: string[] = [];
+      lines.push(`title: ${item.title}`);
+      if (item.description) lines.push(`description: ${stripHtml(item.description, 4000).replace(/\n/g, " ").replace(/\s+/g, " ").trim()}`);
+      lines.push(`due: ${dueText({ due, dueHasTime: hasTime })}`);
+      if (item.maxPoints != null) lines.push(`points: ${item.maxPoints}`);
+      lines.push(`status: ${statusOf({ state: s?.state ?? "NEW", late: s?.late, grade: s?.assignedGrade, maxPoints: item.maxPoints })}`);
+      if (item.alternateLink) lines.push(`link: ${item.alternateLink}`);
+      const attached = attachmentLines(item);
+      if (attached.length) lines.push(...attached);
+      return lines.join("\n");
     },
   },
   {
