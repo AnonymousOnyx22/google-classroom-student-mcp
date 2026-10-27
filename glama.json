@@ -13,6 +13,10 @@
       "description": "Everything assigned that the student has not turned in yet, each with a link to open it in Classroom. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'What do I still have to do?' or 'What's left to turn in across all my classes?'"
     },
     {
+      "name": "export_due_dates_calendar",
+      "description": "Build an ICS calendar file of upcoming due dates so they can be imported into a calendar app. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'Can you give me my due dates as a calendar file?'"
+    },
+    {
       "name": "get_upcoming_due_dates",
       "description": "Work that is due soon and not turned in, soonest first. Pass course_ids or days_ahead to narrow it, or leave both empty. Use this when the user asks 'What's due this week across all my classes?' or 'What's coming up?'"
     },

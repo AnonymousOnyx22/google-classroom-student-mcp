@@ -121,7 +121,7 @@ async function call(client: Client, name: string, args: Record<string, unknown> 
 describe("google-classroom-student-mcp", () => {
   it("exposes only read-only tools", async () => {
     const { tools } = await (await connect()).listTools();
-    expect(tools.length).toBe(10);
+    expect(tools.length).toBe(11);
     for (const t of tools) expect(t.annotations?.readOnlyHint).toBe(true);
   });
 

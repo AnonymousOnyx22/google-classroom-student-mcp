@@ -12,6 +12,7 @@
 ## Tools (all read only)
 - get_my_courses: List the student's active Google Classroom classes with their IDs. Use this when the user asks 'What classes am I in?' or needs a course ID to pass to another tool.
 - get_todo: Everything assigned that the student has not turned in yet, each with a link to open it in Classroom. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'What do I still have to do?' or 'What's left to turn in across all my classes?'
+- export_due_dates_calendar: Build an ICS calendar file of upcoming due dates so they can be imported into a calendar app. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'Can you give me my due dates as a calendar file?'
 - get_upcoming_due_dates: Work that is due soon and not turned in, soonest first. Pass course_ids or days_ahead to narrow it, or leave both empty. Use this when the user asks 'What's due this week across all my classes?' or 'What's coming up?'
 - get_missing_assignments: Past due work that has not been turned in. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'What's overdue?' or 'What am I behind on?'
 - get_assignments: Assignments for one class with due dates and status, each with a link to open it in Classroom. Use this when the user asks 'What's due in this class?' or wants every assignment and its points for a single class.
@@ -21,7 +22,7 @@
 - get_course_materials: Posted materials for one class, each with a link to open it in Classroom and the Drive link of every attached file. Use this when the user asks 'What materials did my teacher post?' or wants the readings, slides and handouts for one class.
 - get_whats_new: One catch up digest for every class: new announcements, newly graded work with the comment the teacher left, overdue work and what is due next. Pass course_ids to limit it, since_days for how far back to look and days_ahead for how far ahead to look. Use this when the user asks 'What's new since yesterday?' or 'What changed in my classes?'
 
-get_todo, get_upcoming_due_dates, get_missing_assignments, get_my_grades, get_target_grade and get_whats_new take an optional course_ids list to check specific classes only. get_upcoming_due_dates and get_whats_new also take an optional days_ahead number. get_announcements and get_whats_new also take an optional since_days number for how far back to look; it defaults to 7 days in the digest and means no date filter in announcements. get_announcements takes optional course_ids too. get_target_grade takes a required target_percent from 0 to 100, which is the class percent you want.
+get_todo, export_due_dates_calendar, get_upcoming_due_dates, get_missing_assignments, get_my_grades, get_target_grade and get_whats_new take an optional course_ids list to check specific classes only. get_upcoming_due_dates and get_whats_new also take an optional days_ahead number. get_announcements and get_whats_new also take an optional since_days number for how far back to look; it defaults to 7 days in the digest and means no date filter in announcements. get_announcements takes optional course_ids too. get_target_grade takes a required target_percent from 0 to 100, which is the class percent you want.
 
 get_todo, get_assignments, get_announcements and get_course_materials print the Classroom page of each item under the title, so the AI can hand the student a direct link to the work. get_course_materials also prints the Drive link of every file attached to a material. Classroom sends a link only for published items.
 
@@ -33,6 +34,7 @@ An announcement counts as new when it was posted or changed inside the window. T
 
 ## Questions students ask
 - "What do I still need to turn in?" goes to get_todo: every assignment you have not handed in, with a link to open it in Classroom.
+- "Can you give me my due dates as a calendar file?" goes to export_due_dates_calendar: build an ICS calendar file of upcoming due dates.
 - "What's overdue?" goes to get_missing_assignments: work that was due and is still not handed in.
 - "What's due this week across all my classes?" goes to get_upcoming_due_dates: work that is due soon, soonest first.
 - "What did my teacher say about my work?" goes to get_my_grades: the comment the teacher left on the graded work, with the score and a link to open it in Classroom.

@@ -128,6 +128,7 @@ Here are the questions students ask, and the tool that answers each one. The ans
 | Your question | Tool | What the answer holds |
 | --- | --- | --- |
 | "What do I still need to turn in?" | `get_todo` | Every assignment you have not handed in, with a link to open it in Classroom |
+| "Can you give me my due dates as a calendar file?" | `export_due_dates_calendar` | Build an ICS calendar file of upcoming due dates |
 | "What's overdue?" | `get_missing_assignments` | Work that was due and is still not handed in |
 | "What's due this week across all my classes?" | `get_upcoming_due_dates` | Work that is due soon, soonest first |
 | "What did my teacher say about my work?" | `get_my_grades` | The comment the teacher left on the graded work, with the score and a link to open it in Classroom |
@@ -199,6 +200,7 @@ All tools are read only.
 | --- | --- |
 | `get_my_courses` | Your active classes and their IDs |
 | `get_todo` | Everything assigned that you haven't turned in |
+| `export_due_dates_calendar` | Build an ICS calendar file of upcoming due dates |
 | `get_upcoming_due_dates` | Work due soon, soonest first |
 | `get_missing_assignments` | Past due work you haven't turned in |
 | `get_assignments` | Assignments for a class with due dates and status |
@@ -216,7 +218,7 @@ Google Classroom has no overall course grade, so `get_my_grades` adds up graded 
 
 `get_my_grades` and `get_whats_new` print what the teacher wrote when they returned the work, under the score, with the Classroom page of the work. `get_my_grades` lists the graded work that has a comment under each class.
 
-`get_todo`, `get_upcoming_due_dates`, `get_missing_assignments`, `get_my_grades`, `get_target_grade` and `get_whats_new` accept an optional list of course IDs (`course_ids`), so you can ask about a few classes only instead of all of them. `get_upcoming_due_dates` and `get_whats_new` also accept an optional number of days to look ahead (`days_ahead`). `get_announcements` and `get_whats_new` also accept an optional number of days to look back (`since_days`), which defaults to 7 days in the digest and means no date filter in announcements. `get_announcements` accepts course IDs (`course_ids`) too. `get_target_grade` takes a required `target_percent` from 0 to 100, which is the class percent you want.
+`get_todo`, `export_due_dates_calendar`, `get_upcoming_due_dates`, `get_missing_assignments`, `get_my_grades`, `get_target_grade` and `get_whats_new` accept an optional list of course IDs (`course_ids`), so you can ask about a few classes only instead of all of them. `get_upcoming_due_dates` and `get_whats_new` also accept an optional number of days to look ahead (`days_ahead`). `get_announcements` and `get_whats_new` also accept an optional number of days to look back (`since_days`), which defaults to 7 days in the digest and means no date filter in announcements. `get_announcements` accepts course IDs (`course_ids`) too. `get_target_grade` takes a required `target_percent` from 0 to 100, which is the class percent you want.
 
 `get_target_grade` adds up the points earned on graded work and the points the work that is left is worth. It then works out how many of those points you need to reach `target_percent`. Work counts as left when it has points and no grade yet, and work the teacher already returned without a grade is left out. If the target needs more points than the work left is worth, the answer says so and gives the best percent you can still reach. The server only sees the points on each piece of work, not any weighting the teacher may use, so the answer counts every point the same.
 

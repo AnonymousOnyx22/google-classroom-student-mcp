@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { ClassroomApi } from "./classroom.js";
 import { type ToolDef, bullets, fmtDate, stripHtml } from "./core/tools.js";
+import { buildIcs } from "./core/ics.js";
 
 type Api = ClassroomApi;
 
@@ -318,6 +319,26 @@ export const tools: ToolDef<Api>[] = [
       let text = bullets(items.map((i) => linked(`${i.title} (${i.course}) due ${dueText(i)}`, i.link)), "Nothing left to turn in.");
       if (totalCourses > 15) text += `\nshowing first 15 of ${totalCourses} classes`;
       return text;
+    },
+  },
+  {
+    name: "export_due_dates_calendar",
+    title: "Export due dates calendar",
+    description: "Build an ICS calendar file of upcoming due dates so they can be imported into a calendar app. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'Can you give me my due dates as a calendar file?'",
+    inputSchema: { course_ids: courseIds },
+    run: async ({ course_ids }, api) => {
+      const { items: all } = await allWork(api, course_ids);
+      const ics = buildIcs(
+        all.map((i) => ({
+          title: i.title,
+          course: i.course,
+          due: i.due,
+          dueHasTime: i.dueHasTime,
+          link: i.link,
+        })),
+        { calendarName: "Classroom due dates" },
+      );
+      return ics;
     },
   },
   {
