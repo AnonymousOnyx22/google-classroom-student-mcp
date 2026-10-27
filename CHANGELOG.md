@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- get_my_grades now adds a weighted percent under each class that uses grading categories with weights in Classroom, for example Homework and Exams. Classes without weights get a short note that the percent is plain points. The points and percent it printed before are unchanged.
 - Work with a due date but no due time now counts as due at the end of that day in your own time zone, not in UTC. This fixes work shown as overdue while it is still due that evening. Set CLASSROOM_TIMEZONE (for example America/Toronto) to choose the zone. Otherwise the zone of the computer running the server is used.
 - Requests to Google now retry a few times with a growing wait when Google answers with a rate limit or a server error, and they respect its Retry-After header.
 - get_whats_new now still returns the digest when one class fails to load. It lists the classes it had to leave out at the end. If every class fails, it reports the error as before.

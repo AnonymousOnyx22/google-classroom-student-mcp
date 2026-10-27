@@ -245,6 +245,30 @@ describe("google-classroom-student-mcp", () => {
     expect(digest).toContain("teacher said: Nice work, watch your signs.");
   });
 
+  it("weights grades by category and notes when a class is unweighted", async () => {
+    const make = (settings: unknown): any => ({
+      get: async () => ({ gradebookSettings: settings }),
+      list: async (path: string) => {
+        if (path === "/v1/courses") return [{ id: "1", name: "Math" }];
+        if (path.endsWith("/studentSubmissions"))
+          return [
+            { courseWorkId: "w1", state: "RETURNED", assignedGrade: 9 },
+            { courseWorkId: "w2", state: "RETURNED", assignedGrade: 50 },
+          ];
+        return [
+          { id: "w1", title: "Homework 1", maxPoints: 10, gradeCategory: { id: "hw" } },
+          { id: "w2", title: "Exam 1", maxPoints: 100, gradeCategory: { id: "ex" } },
+        ];
+      },
+    });
+    const tool = tools.find((t) => t.name === "get_my_grades")!;
+    const weighted = await tool.run({}, make({ calculationType: "WEIGHTED_CATEGORIES", gradeCategories: [{ id: "hw", name: "Homework", weight: 40000 }, { id: "ex", name: "Exams", weight: 60000 }] }));
+    expect(weighted).toContain("Math 59/110 points on 2 graded items (53.6%)");
+    expect(weighted).toContain("weighted by category: 66.0% (Homework 40.0% weight: 90.0%, Exams 60.0% weight: 50.0%)");
+    const plain = await tool.run({}, make({ calculationType: "TOTAL_POINTS" }));
+    expect(plain).toContain("does not weight work by category");
+  });
+
   it("leaves the comment line out when the teacher wrote nothing", async () => {
     const api: any = {
       get: async () => ({}),

@@ -27,6 +27,8 @@ interface WorkItem {
   state: string;
   maxPoints?: number;
   grade?: number;
+  /** The id of the grading category the teacher put the work in. */
+  category?: string;
   late?: boolean;
   /** When the teacher gave the work back with a grade. */
   gradedAt?: Date;
@@ -141,6 +143,7 @@ async function courseWork(api: Api, course: Course): Promise<WorkItem[]> {
       state: s?.state ?? "NEW",
       maxPoints: w.maxPoints,
       grade: s?.assignedGrade,
+      category: w.gradeCategory?.id ?? (typeof w.gradeCategory === "string" ? w.gradeCategory : undefined),
       late: s?.late,
       gradedAt: gradedAt(w, s),
       comment: commentText(s),
@@ -259,6 +262,39 @@ function targetLine(name: string, work: WorkItem[], target: number): string {
   return `${head}. Target ${goal}: ${fmtPoints(needed)} points needed on the ${fmtPoints(remaining)} points of work left, which is ${fmtPercent((needed / remaining) * 100)} on that work.`;
 }
 
+/**
+ * The percent for a class that weights its work by grading category, as a
+ * line to print under the plain points line. Only categories with graded
+ * work count, and their weights are scaled to add up to 100. A class with no
+ * weights gets a plain note. When the course settings cannot be read, there
+ * is no line at all.
+ */
+async function weightedLine(api: Api, course: Course, graded: WorkItem[]): Promise<string | undefined> {
+  let settings: any;
+  try {
+    settings = (await api.get<any>(`/v1/courses/${course.id}`))?.gradebookSettings;
+  } catch {
+    return undefined;
+  }
+  const cats: any[] = settings?.gradeCategories ?? [];
+  if (settings?.calculationType !== "WEIGHTED_CATEGORIES" || !cats.length) {
+    return "  This class does not weight work by category in Classroom, so the percent above is plain points.";
+  }
+  const parts = cats
+    .map((cat) => {
+      const items = graded.filter((i) => i.category === cat.id);
+      const possible = items.reduce((n, i) => n + (i.maxPoints ?? 0), 0);
+      const earned = items.reduce((n, i) => n + (i.grade ?? 0), 0);
+      return { name: cat.name ?? "Category", weight: Number(cat.weight) || 0, percent: possible ? (earned / possible) * 100 : undefined };
+    })
+    .filter((p) => p.percent != null && p.weight > 0);
+  const total = parts.reduce((n, p) => n + p.weight, 0);
+  if (!total) return "  This class weights work by category, but none of the graded work is in a weighted category, so the percent above is plain points.";
+  const overall = parts.reduce((n, p) => n + (p.weight / total) * (p.percent ?? 0), 0);
+  const detail = parts.map((p) => `${p.name} ${fmtPercent((p.weight / total) * 100)} weight: ${fmtPercent(p.percent ?? 0)}`).join(", ");
+  return `  weighted by category: ${fmtPercent(overall)} (${detail})`;
+}
+
 export const tools: ToolDef<Api>[] = [
   {
     name: "get_my_courses",
@@ -335,7 +371,7 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_my_grades",
     title: "My grades",
-    description: "Grades on returned work for each class, with the comment the teacher left on the work. Google Classroom has no overall grade, so this adds up graded work only. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'How am I doing in my classes?' or 'What grades have I gotten back?'",
+    description: "Grades on returned work for each class, with the comment the teacher left on the work. Google Classroom has no overall grade, so this adds up graded work only, and adds a weighted percent when the class uses grading categories with weights. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'How am I doing in my classes?' or 'What grades have I gotten back?'",
     inputSchema: { course_ids: courseIds },
     run: async ({ course_ids }, api) => {
       const { courses, total } = await coursesFor(api, course_ids);
@@ -351,11 +387,12 @@ export const tools: ToolDef<Api>[] = [
         const earned = graded.reduce((n, i) => n + (i.grade ?? 0), 0);
         const possible = graded.reduce((n, i) => n + (i.maxPoints ?? 0), 0);
         const head = `${name} ${earned}/${possible} points on ${graded.length} graded items (${((earned / possible) * 100).toFixed(1)}%)`;
+        const weighted = await weightedLine(api, courses[idx], graded);
         const feedback = graded
           .filter((i) => i.comment)
           .map((i) => gradedItem(i, `  ${i.title}: ${i.grade}/${i.maxPoints ?? "?"}`))
           .join("\n");
-        lines.push(feedback ? `${head}\n${feedback}` : head);
+        lines.push([head, weighted, feedback].filter(Boolean).join("\n"));
       }
       let text = bullets(lines, "No grades found.");
       if (total > 15) text += `\nshowing first 15 of ${total} classes`;

@@ -212,7 +212,7 @@ The same list is in plain text in [llms.txt](./llms.txt), one line per tool with
 
 get_todo, get_assignments, get_announcements and get_course_materials print the Classroom page of each item under the title, so the AI can hand the student a direct link to the work. get_course_materials also prints the Drive link of every file attached to a material. Classroom sends a link only for published items.
 
-Google Classroom has no overall course grade, so `get_my_grades` adds up graded work only and says so.
+Google Classroom has no overall course grade, so `get_my_grades` adds up graded work only and says so. When a class weights its work by grading category, it also prints a weighted percent, using only the categories that have graded work. `get_target_grade` still uses plain points.
 
 `get_my_grades` and `get_whats_new` print what the teacher wrote when they returned the work, under the score, with the Classroom page of the work. `get_my_grades` lists the graded work that has a comment under each class.
 
