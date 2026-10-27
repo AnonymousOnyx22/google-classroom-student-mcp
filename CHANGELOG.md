@@ -6,7 +6,6 @@
 - Work with a due date but no due time now counts as due at the end of that day in your own time zone, not in UTC. This fixes work shown as overdue while it is still due that evening. Set CLASSROOM_TIMEZONE (for example America/Toronto) to choose the zone. Otherwise the zone of the computer running the server is used.
 - Requests to Google now retry a few times with a growing wait when Google answers with a rate limit or a server error, and they respect its Retry-After header.
 - get_whats_new now still returns the digest when one class fails to load. It lists the classes it had to leave out at the end. If every class fails, it reports the error as before.
-- Added an iCalendar builder helper, so due dates can be written as calendar events with escaped text, folded lines and stable IDs. It is not used by a tool yet.
 
 ## 0.1.7
 
