@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Requests to Google now retry a few times with a growing wait when Google answers with a rate limit or a server error, and they respect its Retry-After header.
+- get_whats_new now still returns the digest when one class fails to load. It lists the classes it had to leave out at the end. If every class fails, it reports the error as before.
+
 ## 0.1.7
 
 - get_announcements now takes an optional since_days number, so it only shows announcements updated within that many days back from now. Leave it out to keep showing every recent announcement.

@@ -405,13 +405,25 @@ export const tools: ToolDef<Api>[] = [
       const to = now + ahead * 86400000;
 
       const { courses, total } = await coursesFor(api, course_ids);
-      const perCourse = await Promise.all(
-        courses.map(async (c) => ({
-          name: c.name,
-          work: await courseWork(api, c),
-          announcements: await courseAnnouncements(api, c),
-        })),
+      const failed: string[] = [];
+      let firstError: unknown;
+      const settled = await Promise.all(
+        courses.map(async (c) => {
+          try {
+            return {
+              name: c.name,
+              work: await courseWork(api, c),
+              announcements: await courseAnnouncements(api, c),
+            };
+          } catch (err) {
+            failed.push(c.name);
+            firstError ??= err;
+            return null;
+          }
+        }),
       );
+      if (courses.length && failed.length === courses.length) throw firstError;
+      const perCourse = settled.filter((c): c is NonNullable<typeof c> => c != null);
       const all = perCourse.flatMap((c) => c.work);
       const announcements = perCourse.flatMap((c) => c.announcements.map((a) => ({ course: c.name, a })));
 
@@ -463,7 +475,10 @@ export const tools: ToolDef<Api>[] = [
           "Nothing due in that time.",
         ),
       ].join("\n\n");
-      return total > 15 ? `${text}\nshowing first 15 of ${total} classes` : text;
+      const skipped = failed.length
+        ? `\n\nCould not load ${failed.length} of ${courses.length} classes, so they are missing from this digest: ${failed.join(", ")}. Try again shortly.`
+        : "";
+      return (total > 15 ? `${text}\nshowing first 15 of ${total} classes` : text) + skipped;
     },
   },
 ];

@@ -1,4 +1,6 @@
 export class ApiError extends Error {
+  /** Set from a Retry-After header when the server sent one. */
+  retryAfterMs?: number;
   constructor(
     message: string,
     public status: number,
