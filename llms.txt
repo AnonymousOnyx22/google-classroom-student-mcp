@@ -4,6 +4,7 @@
 
 ## Setup
 - Needs GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_REFRESH_TOKEN.
+- Optional: set CLASSROOM_TIMEZONE, for example America/Toronto. Work with a due date but no due time is due at the end of that day in that zone. The default is the zone of the computer running the server.
 - Run the one time login command from the README to get a refresh token.
 - Run `npx google-classroom-student-mcp setup` to print a ready to paste mcpServers block for Claude Desktop, Claude Code, Cursor and other MCP apps.
 - Run with npx -y google-classroom-student-mcp. Run `npx google-classroom-student-mcp doctor` to check the setup.

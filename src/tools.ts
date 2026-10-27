@@ -40,19 +40,57 @@ async function activeCourses(api: Api): Promise<Course[]> {
   return api.list<Course>("/v1/courses", "courses", { courseStates: "ACTIVE", studentId: "me" });
 }
 
-/** Classroom due dates are UTC. If there is no time, treat it as the end of that day. */
-function parseDue(w: any): { due: Date | null; hasTime: boolean } {
+/** The time zone for due dates with no time: CLASSROOM_TIMEZONE, else this computer's zone, else UTC. */
+function dueZone(): string {
+  for (const zone of [process.env.CLASSROOM_TIMEZONE, Intl.DateTimeFormat().resolvedOptions().timeZone]) {
+    if (!zone) continue;
+    try {
+      new Intl.DateTimeFormat("en-CA", { timeZone: zone });
+      return zone;
+    } catch {
+      // not a valid zone name, try the next one
+    }
+  }
+  return "UTC";
+}
+
+/** How many milliseconds the zone is ahead of UTC at this moment. */
+function zoneOffset(at: number, zone: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: zone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+  }).formatToParts(new Date(at));
+  const n = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return Date.UTC(n("year"), n("month") - 1, n("day"), n("hour"), n("minute"), n("second")) - Math.floor(at / 1000) * 1000;
+}
+
+/** The moment 23:59 on this calendar day in the zone. */
+function endOfDay(d: { year: number; month: number; day: number }, zone: string): Date {
+  const wall = Date.UTC(d.year, d.month - 1, d.day, 23, 59);
+  let at = wall - zoneOffset(wall, zone);
+  at = wall - zoneOffset(at, zone);
+  return new Date(at);
+}
+
+/** Classroom due times are UTC. If there is no time, treat it as the end of that day in the user's zone. */
+export function parseDue(w: any): { due: Date | null; hasTime: boolean } {
   const d = w.dueDate;
   if (!d?.year) return { due: null, hasTime: false };
   const t = w.dueTime;
-  const hasTime = Boolean(t);
-  return { due: new Date(Date.UTC(d.year, d.month - 1, d.day, t?.hours ?? 23, t?.minutes ?? 59)), hasTime };
+  if (!t) return { due: endOfDay(d, dueZone()), hasTime: false };
+  return { due: new Date(Date.UTC(d.year, d.month - 1, d.day, t.hours ?? 0, t.minutes ?? 0)), hasTime: true };
 }
 
 function dueText(i: { due: Date | null; dueHasTime: boolean }): string {
   if (!i.due) return "no due date";
   if (i.dueHasTime) return fmtDate(i.due.toISOString());
-  return i.due.toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+  return i.due.toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric", timeZone: dueZone() });
 }
 
 /** Parse a Classroom timestamp, or return undefined when there is none. */

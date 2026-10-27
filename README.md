@@ -111,6 +111,8 @@ GOOGLE_CLIENT_ID=your-id GOOGLE_CLIENT_SECRET=your-secret npx google-classroom-s
 
 Open the link it prints, approve read only access, and copy the three values it prints.
 
+Optional: set `CLASSROOM_TIMEZONE` to a time zone name such as `America/Toronto`. Work with a due date but no due time counts as due at the end of that day in this zone. Without it, the time zone of the computer running the server is used.
+
 6. Add them to your AI app's MCP config. Run `npx google-classroom-student-mcp setup` and paste the block for your app, or use one of the formats from the Quick start above.
 
 7. Restart your AI app and ask "what's due this week?"
