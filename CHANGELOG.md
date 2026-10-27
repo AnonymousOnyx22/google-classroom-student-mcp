@@ -6,6 +6,7 @@
 - Work with a due date but no due time now counts as due at the end of that day in your own time zone, not in UTC. This fixes work shown as overdue while it is still due that evening. Set CLASSROOM_TIMEZONE (for example America/Toronto) to choose the zone. Otherwise the zone of the computer running the server is used.
 - Requests to Google now retry a few times with a growing wait when Google answers with a rate limit or a server error, and they respect its Retry-After header.
 - get_whats_new now still returns the digest when one class fails to load. It lists the classes it had to leave out at the end. If every class fails, it reports the error as before.
+- New tool export_due_dates_calendar gives you the work that is still due and not turned in as a calendar file you can import into Google Calendar, Apple Calendar or Outlook. It returns the file as text and does not write anything to your computer. Pass course_ids to limit it to a few classes.
 
 ## 0.1.7
 

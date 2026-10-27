@@ -151,6 +151,21 @@ describe("google-classroom-student-mcp", () => {
     expect(missing).not.toContain("Project");
   });
 
+  it("exports only upcoming work that is not turned in as a calendar file", async () => {
+    const c = await connect();
+    const { text: ics, isError } = await call(c, "export_due_dates_calendar");
+    expect(isError).toBe(false);
+    expect(ics.startsWith("BEGIN:VCALENDAR")).toBe(true);
+    expect(ics.trimEnd().endsWith("END:VCALENDAR")).toBe(true);
+    expect(ics).toContain("Project");
+    expect(ics).not.toContain("Worksheet 1");
+    expect(ics).not.toContain("Quiz 2");
+    expect(ics).not.toContain("Essay");
+    const other = (await call(c, "export_due_dates_calendar", { course_ids: ["200"] })).text;
+    expect(other).not.toContain("Project");
+    expect(other).toContain("BEGIN:VCALENDAR");
+  });
+
   it("limits work to the given course ids", async () => {
     const c = await connect();
     const todo = (await call(c, "get_todo", { course_ids: ["200"] })).text;

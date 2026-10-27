@@ -327,9 +327,12 @@ export const tools: ToolDef<Api>[] = [
     description: "Build an ICS calendar file of upcoming due dates so they can be imported into a calendar app. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'Can you give me my due dates as a calendar file?'",
     inputSchema: { course_ids: courseIds },
     run: async ({ course_ids }, api) => {
+      const now = Date.now();
       const { items: all } = await allWork(api, course_ids);
+      // only what get_upcoming_due_dates would list: work not turned in and still due, so old and finished work stays out of the calendar
+      const upcoming = all.filter((i) => OPEN.has(i.state) && i.due && i.due.getTime() >= now);
       const ics = buildIcs(
-        all.map((i) => ({
+        upcoming.map((i) => ({
           title: i.title,
           course: i.course,
           due: i.due,
