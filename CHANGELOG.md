@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.8
 
 - New tool get_assignment_details answers "what does this assignment ask for?". Give it the course ID and the assignment ID and it prints the teacher's description, the files and links attached to the assignment, its due date, its points and your status, with the Classroom page of the assignment under it. get_assignments lists only the title, due date, points and status, so use get_assignment_details when you need the description and the attachments.
 - get_my_grades now adds a weighted percent under each class that uses grading categories with weights in Classroom, for example Homework and Exams. Classes without weights get a short note that the percent is plain points. The points and percent it printed before are unchanged.
