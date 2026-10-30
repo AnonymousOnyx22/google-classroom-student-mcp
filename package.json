@@ -1,6 +1,6 @@
 {
   "name": "google-classroom-student-mcp",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Google Classroom MCP server for students. Read only access to Google Classroom courses, assignments, due dates, missing work, grades and announcements. Works with Claude, ChatGPT, Cursor and other AI apps.",
   "type": "module",
   "main": "build/src/index.js",
