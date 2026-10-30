@@ -46,7 +46,7 @@
     },
     {
       "name": "get_course_materials",
-      "description": "Posted materials for one class, each with a link to open it in Classroom and the Drive link of every attached file. Use this when the user asks 'What materials did my teacher post?' or wants the readings, slides and handouts for one class."
+      "description": "Posted materials for one class, grouped by topic with the Drive link of every attached file. Use this when the user asks 'What materials did my teacher post?' or 'What did we cover in unit 3?' or wants the readings, slides and handouts for one class."
     },
     {
       "name": "get_whats_new",

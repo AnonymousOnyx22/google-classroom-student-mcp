@@ -522,19 +522,39 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_course_materials",
     title: "Class materials",
-    description: "Posted materials for one class, each with a link to open it in Classroom and the Drive link of every attached file. Use this when the user asks 'What materials did my teacher post?' or wants the readings, slides and handouts for one class.",
+    description: "Posted materials for one class, grouped by topic with the Drive link of every attached file. Use this when the user asks 'What materials did my teacher post?' or 'What did we cover in unit 3?' or wants the readings, slides and handouts for one class.",
     inputSchema: { course_id: courseId },
     run: async ({ course_id }, api) => {
-      const items = await api.list<any>(`/v1/courses/${course_id}/courseWorkMaterials`, "courseWorkMaterial", { courseWorkMaterialStates: "PUBLISHED" });
-      return bullets(
-        items.map((m) =>
-          [
-            linked(`${m.title}${m.description ? `, ${stripHtml(m.description, 160).replace(/\n/g, " ")}` : ""}`, m.alternateLink),
-            ...driveFiles(m),
-          ].join("\n"),
-        ),
-        "No materials posted.",
-      );
+      const [items, topics] = await Promise.all([
+        api.list<any>(`/v1/courses/${course_id}/courseWorkMaterials`, "courseWorkMaterial", { courseWorkMaterialStates: "PUBLISHED" }),
+        api.list<any>(`/v1/courses/${course_id}/topics`, "topic").catch(() => []),
+      ]);
+      const topicMap = new Map<string, string>();
+      for (const t of topics) {
+        if (t?.topicId && t?.name) topicMap.set(String(t.topicId), String(t.name));
+      }
+      const groups = new Map<string, any[]>();
+      for (const m of items) {
+        const key = m?.topicId ? topicMap.get(String(m.topicId)) ?? "No topic" : "No topic";
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key)!.push(m);
+      }
+      const order = [...groups.keys()].sort((a, b) => (a === "No topic" ? 1 : b === "No topic" ? -1 : a.localeCompare(b)));
+      const lines: string[] = [];
+      for (const key of order) {
+        lines.push(key);
+        for (const m of groups.get(key)!) {
+          lines.push(
+            "  " +
+              [
+                linked(`${m.title}${m.description ? `, ${stripHtml(m.description, 160).replace(/\n/g, " ")}` : ""}`, m.alternateLink),
+                ...driveFiles(m),
+              ].join("\n  "),
+          );
+        }
+      }
+      if (!lines.length) return "No materials posted.";
+      return lines.join("\n");
     },
   },
   {
