@@ -533,28 +533,26 @@ export const tools: ToolDef<Api>[] = [
       for (const t of topics) {
         if (t?.topicId && t?.name) topicMap.set(String(t.topicId), String(t.name));
       }
+      const entry = (m: any) =>
+        [
+          linked(`${m.title}${m.description ? `, ${stripHtml(m.description, 160).replace(/\n/g, " ")}` : ""}`, m.alternateLink),
+          ...driveFiles(m),
+        ].join("\n");
+      // "" holds the materials with no topic, so a real topic can be called anything
       const groups = new Map<string, any[]>();
       for (const m of items) {
-        const key = m?.topicId ? topicMap.get(String(m.topicId)) ?? "No topic" : "No topic";
+        const key = (m?.topicId && topicMap.get(String(m.topicId))) || "";
         if (!groups.has(key)) groups.set(key, []);
         groups.get(key)!.push(m);
       }
-      const order = [...groups.keys()].sort((a, b) => (a === "No topic" ? 1 : b === "No topic" ? -1 : a.localeCompare(b)));
-      const lines: string[] = [];
-      for (const key of order) {
-        lines.push(key);
-        for (const m of groups.get(key)!) {
-          lines.push(
-            "  " +
-              [
-                linked(`${m.title}${m.description ? `, ${stripHtml(m.description, 160).replace(/\n/g, " ")}` : ""}`, m.alternateLink),
-                ...driveFiles(m),
-              ].join("\n  "),
-          );
-        }
+      // no topics known, from the class or from the API, so the list looks as it did before topics
+      if (groups.size === 0 || (groups.size === 1 && groups.has(""))) {
+        return bullets(items.map(entry), "No materials posted.");
       }
-      if (!lines.length) return "No materials posted.";
-      return lines.join("\n");
+      const order = [...groups.keys()].sort((a, b) =>
+        a === "" ? 1 : b === "" ? -1 : a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }),
+      );
+      return order.map((key) => `${key || "No topic"}:\n${bullets(groups.get(key)!.map(entry))}`).join("\n\n");
     },
   },
   {

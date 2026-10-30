@@ -90,6 +90,15 @@ beforeAll(async () => {
         { text: "Test <b>Friday</b>", updateTime: new Date(Date.now() - 30 * day).toISOString() },
       ] });
     }
+    if (p === "/v1/courses/400/topics") return send(200, { topic: [
+      { topicId: "t10", name: "Unit 10" },
+      { topicId: "t2", name: "Unit 2" },
+    ] });
+    if (p === "/v1/courses/400/courseWorkMaterials") return send(200, { courseWorkMaterial: [
+      { title: "Loose notes" },
+      { title: "Final review", topicId: "t10" },
+      { title: "Fractions sheet", topicId: "t2", alternateLink: "https://classroom.google.com/m/f" },
+    ] });
     if (p === "/v1/courses/100/courseWorkMaterials") return send(200, { courseWorkMaterial: [
       {
         title: "Slides week 3",
@@ -349,6 +358,19 @@ describe("google-classroom-student-mcp", () => {
     expect(announcements).toContain("link: https://classroom.google.com/c/Math/course/100/announcements/a1");
     const materials = (await call(c, "get_course_materials", { course_id: "100" })).text;
     expect(materials).toContain("link: https://classroom.google.com/c/Math/course/100/courseWorkMaterials/m1");
+  });
+
+  it("groups materials by topic in number order, with untopiced ones last", async () => {
+    const { text } = await call(await connect(), "get_course_materials", { course_id: "400" });
+    expect(text).toBe(
+      "Unit 2:\n- Fractions sheet\n  link: https://classroom.google.com/m/f\n\nUnit 10:\n- Final review\n\nNo topic:\n- Loose notes",
+    );
+  });
+
+  it("keeps the plain list when the class has no topics or they cannot be read", async () => {
+    const { text } = await call(await connect(), "get_course_materials", { course_id: "100" });
+    expect(text.startsWith("- Slides week 3")).toBe(true);
+    expect(text).not.toContain("No topic");
   });
 
   it("prints the Drive link of every file attached to a material", async () => {

@@ -7,6 +7,8 @@ export const SCOPES = [
   "https://www.googleapis.com/auth/classroom.student-submissions.me.readonly",
   "https://www.googleapis.com/auth/classroom.announcements.readonly",
   "https://www.googleapis.com/auth/classroom.courseworkmaterials.readonly",
+  // get_course_materials reads the topic names to group materials; without it the list comes back ungrouped
+  "https://www.googleapis.com/auth/classroom.topics.readonly",
 ];
 
 export type TokenProvider = () => Promise<string>;

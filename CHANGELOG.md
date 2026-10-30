@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- get_course_materials can now read topic names, so materials really come back grouped by topic. Sign in again with the login command to give the server the new read only topics permission. Until then, or in a class with no topics, the list looks as it did before. Topics are sorted in number order, so Unit 2 comes before Unit 10.
+
 ## 0.1.9
 
 - Update the table of sibling MCP servers in the README
