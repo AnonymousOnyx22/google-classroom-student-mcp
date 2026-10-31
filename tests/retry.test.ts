@@ -70,7 +70,7 @@ describe("get_whats_new with a failing class", () => {
 });
 
 describe("get_whats_new with many classes", () => {
-  async function many(count: number, failing: string[] = []) {
+  async function many(count: number, failing: string[] = [], offset?: number) {
     const seen = new Set<string>();
     const courses = Array.from({ length: count }, (_, i) => ({ id: String(i + 1), name: `Class ${i + 1}` }));
     const f = (async (url: string) => {
@@ -85,7 +85,7 @@ describe("get_whats_new with many classes", () => {
     const [a, b] = InMemoryTransport.createLinkedPair();
     const client = new Client({ name: "test", version: "0" });
     await Promise.all([server.connect(a), client.connect(b)]);
-    const res: any = await client.callTool({ name: "get_whats_new", arguments: {} });
+    const res: any = await client.callTool({ name: "get_whats_new", arguments: offset == null ? {} : { offset } });
     return { text: res.content[0].text as string, isError: Boolean(res.isError), seen };
   }
 
@@ -94,6 +94,19 @@ describe("get_whats_new with many classes", () => {
     expect(text).toContain("showing first 15 of 20 classes");
     expect(seen.size).toBe(15);
     expect(seen.has("16")).toBe(false);
+  });
+
+  it("continues past the cap with offset", async () => {
+    const { text, seen } = await many(20, [], 15);
+    expect(text).toContain("showing classes 16 to 20 of 20");
+    expect(seen.size).toBe(5);
+    expect(seen.has("16")).toBe(true);
+    expect(seen.has("15")).toBe(false);
+  });
+
+  it("points to the next offset when more classes remain", async () => {
+    const { text } = await many(40, [], 15);
+    expect(text).toContain("showing classes 16 to 30 of 40, pass offset 30 for the next ones");
   });
 
   it("does not print the cap line for exactly 15 classes", async () => {
