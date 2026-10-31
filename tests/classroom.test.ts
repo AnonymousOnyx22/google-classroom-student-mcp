@@ -90,6 +90,11 @@ beforeAll(async () => {
         { text: "Test <b>Friday</b>", updateTime: new Date(Date.now() - 30 * day).toISOString() },
       ] });
     }
+    if (p === "/v1/courses/100/teachers") return send(200, { teachers: [
+      { profile: { name: { fullName: "Ms Rivera" }, emailAddress: "rivera@school.test" } },
+      { profile: { name: { fullName: "Mr Chen" } } },
+    ] });
+    if (p === "/v1/courses/200/teachers") return send(200, {});
     if (p === "/v1/courses/400/topics") return send(200, { topic: [
       { topicId: "t10", name: "Unit 10" },
       { topicId: "t2", name: "Unit 2" },
@@ -135,7 +140,7 @@ async function call(client: Client, name: string, args: Record<string, unknown> 
 describe("google-classroom-student-mcp", () => {
   it("exposes only read-only tools", async () => {
     const { tools } = await (await connect()).listTools();
-    expect(tools.length).toBe(12);
+    expect(tools.length).toBe(13);
     for (const t of tools) expect(t.annotations?.readOnlyHint).toBe(true);
   });
 
@@ -380,6 +385,12 @@ describe("google-classroom-student-mcp", () => {
     );
   });
 
+  it("lists the teachers of a class with their email when Classroom shares it", async () => {
+    const c = await connect();
+    expect((await call(c, "get_course_teachers", { course_id: "100" })).text).toBe("- Ms Rivera, rivera@school.test\n- Mr Chen");
+    expect((await call(c, "get_course_teachers", { course_id: "200" })).text).toBe("No teachers found.");
+  });
+
   it("keeps the plain list when the class has no topics or they cannot be read", async () => {
     const { text } = await call(await connect(), "get_course_materials", { course_id: "100" });
     expect(text.startsWith("- Slides week 3")).toBe(true);
@@ -476,7 +487,8 @@ describe("google-classroom-student-mcp", () => {
     const link = new URL(buildAuthUrl("my-id", "http://127.0.0.1:5000"));
     expect(link.searchParams.get("access_type")).toBe("offline");
     expect(link.searchParams.get("scope")).toBe(SCOPES.join(" "));
-    for (const s of SCOPES) expect(s.endsWith(".readonly")).toBe(true);
+    // classroom.profile.emails only lets the app read email addresses, and has no .readonly twin
+    for (const s of SCOPES) expect(s.endsWith(".readonly") || s.endsWith("classroom.profile.emails")).toBe(true);
     const ok = await exchangeCode({ clientId: "a", clientSecret: "b", code: "code-good", redirectUri: "http://x" }, fetch, `${base}/token`);
     expect(ok.refresh_token).toBe("rt-good");
     await expect(exchangeCode({ clientId: "a", clientSecret: "b", code: "other", redirectUri: "http://x" }, fetch, `${base}/token`)).rejects.toThrow(/refresh token/);

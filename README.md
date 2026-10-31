@@ -210,6 +210,7 @@ All tools are read only.
 | `get_target_grade` | Points needed on the work left to reach a target percent |
 | `get_announcements` | Recent announcements |
 | `get_course_materials` | Materials posted in a class |
+| `get_course_teachers` | Teachers of a class with their email when Classroom shares it |
 | `get_whats_new` | One catch up digest: new announcements, new grades, overdue work and what is due next |
 
 The same list is in plain text in [llms.txt](./llms.txt), one line per tool with its description and the arguments it takes. That file ships with the package, so site indexes and AI apps that read plain text files can pick it up.

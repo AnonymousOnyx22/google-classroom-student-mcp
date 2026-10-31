@@ -9,6 +9,9 @@ export const SCOPES = [
   "https://www.googleapis.com/auth/classroom.courseworkmaterials.readonly",
   // get_course_materials reads the topic names to group materials; without it the list comes back ungrouped
   "https://www.googleapis.com/auth/classroom.topics.readonly",
+  // get_course_teachers lists the teachers of a class and reads their email addresses
+  "https://www.googleapis.com/auth/classroom.rosters.readonly",
+  "https://www.googleapis.com/auth/classroom.profile.emails",
 ];
 
 export type TokenProvider = () => Promise<string>;

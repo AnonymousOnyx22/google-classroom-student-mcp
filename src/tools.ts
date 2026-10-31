@@ -572,6 +572,23 @@ export const tools: ToolDef<Api>[] = [
     },
   },
   {
+    name: "get_course_teachers",
+    title: "Class teachers",
+    description: "Teachers of one class with their email addresses when Classroom shares them. Pass the course ID. Use this when the user asks 'Who teaches this class?' or 'How do I email my teacher?'",
+    inputSchema: { course_id: courseId },
+    run: async ({ course_id }, api) => {
+      const teachers = await api.list<any>(`/v1/courses/${course_id}/teachers`, "teachers");
+      return bullets(
+        teachers.map((t) => {
+          const name = t?.profile?.name?.fullName || "Unnamed teacher";
+          const email = t?.profile?.emailAddress;
+          return email ? `${name}, ${email}` : name;
+        }),
+        "No teachers found.",
+      );
+    },
+  },
+  {
     name: "get_whats_new",
     title: "What's new",
     description: "One catch up digest for every class: new announcements, newly graded work with the comment the teacher left, overdue work and what is due next. Pass course_ids to limit it, since_days for how far back to look and days_ahead for how far ahead to look. Use this when the user asks 'What's new since yesterday?' or 'What changed in my classes?'",
