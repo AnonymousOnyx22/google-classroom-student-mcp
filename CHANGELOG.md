@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.10
 
 - get_todo now starts with one line such as "3 due today, 2 overdue", so the answer to "what is urgent?" comes before the full list. Today is the calendar day in your time zone, or CLASSROOM_TIMEZONE if you set it. The list under it is unchanged.
 - get_todo, get_upcoming_due_dates, get_missing_assignments, get_my_grades, get_target_grade, get_announcements and get_whats_new now take an optional offset, so students with more than 15 classes can reach the rest. The tools still read 15 classes at a time. Pass offset 15 for the next 15, and the "showing first 15" line now tells you which offset to use. Leaving offset out works as before.
