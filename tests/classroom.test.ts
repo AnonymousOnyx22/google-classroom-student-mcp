@@ -314,6 +314,54 @@ describe("google-classroom-student-mcp", () => {
     expect(text).toContain("Biology no graded work and no work left to score");
   });
 
+  it("rejects a target_percent outside 0 to 100 or missing", async () => {
+    const c = await connect();
+    for (const bad of [-1, 100.5, 150]) {
+      const res = await call(c, "get_target_grade", { course_ids: ["100"], target_percent: bad });
+      expect(res.isError).toBe(true);
+      expect(res.text).not.toContain("points needed");
+    }
+    const missing = await call(c, "get_target_grade", { course_ids: ["100"] });
+    expect(missing.isError).toBe(true);
+    const wrongType = await call(c, "get_target_grade", { course_ids: ["100"], target_percent: "90" });
+    expect(wrongType.isError).toBe(true);
+  });
+
+  it("accepts the edges of the target_percent range", async () => {
+    const c = await connect();
+    const zero = await call(c, "get_target_grade", { course_ids: ["100"], target_percent: 0 });
+    expect(zero.isError).toBe(false);
+    expect(zero.text).toContain("already there");
+    const full = await call(c, "get_target_grade", { course_ids: ["100"], target_percent: 100 });
+    expect(full.isError).toBe(false);
+    expect(full.text).toContain("Target 100.0%");
+  });
+
+  it("reports an error for get_target_grade when the class name or class is not usable", async () => {
+    const c = await connect();
+    const none = await call(c, "get_target_grade", { course_name: "Chemistry", target_percent: 90 });
+    expect(none.isError).toBe(true);
+    expect(none.text).toContain("No active class matches");
+    const denied = await call(c, "get_target_grade", { course_ids: ["403"], target_percent: 90 });
+    expect(denied.isError).toBe(true);
+  });
+
+  it("reports errors from get_assignment_details for bad input", async () => {
+    const c = await connect();
+    const noWork = await call(c, "get_assignment_details", { course_id: "100" });
+    expect(noWork.isError).toBe(true);
+    const noCourse = await call(c, "get_assignment_details", { course_work_id: "w5" });
+    expect(noCourse.isError).toBe(true);
+    const denied = await call(c, "get_assignment_details", { course_id: "403", course_work_id: "w5" });
+    expect(denied.isError).toBe(true);
+    const wrongClass = await call(c, "get_assignment_details", { course_id: "200", course_work_id: "w5" });
+    expect(wrongClass.isError).toBe(true);
+    expect(wrongClass.text).toContain("was not found");
+    const empty = await call(c, "get_assignment_details", { course_id: "300", course_work_id: "w5" });
+    expect(empty.isError).toBe(true);
+    expect(empty.text).toContain("was not found");
+  });
+
   it("prints the comment the teacher left on returned work", async () => {
     const c = await connect();
     const grades = (await call(c, "get_my_grades")).text;
