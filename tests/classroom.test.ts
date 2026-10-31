@@ -160,6 +160,14 @@ describe("google-classroom-student-mcp", () => {
     expect(text.indexOf("Project")).toBeLessThan(text.indexOf("no due date") === -1 ? 1e9 : text.indexOf("no due date"));
   });
 
+  it("starts the to-do list with a due today and overdue count", async () => {
+    const { text } = await call(await connect(), "get_todo");
+    expect(text.split("\n")[0]).toMatch(/^\d+ due today, \d+ overdue$/);
+    expect(text.split("\n")[0]).toContain("1 overdue");
+    const empty = (await call(await connect(), "get_todo", { course_ids: ["999"] })).text;
+    expect(empty).not.toContain("due today");
+  });
+
   it("separates upcoming from missing", async () => {
     const c = await connect();
     const up = (await call(c, "get_upcoming_due_dates")).text;

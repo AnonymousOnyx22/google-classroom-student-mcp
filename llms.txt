@@ -59,6 +59,7 @@ Every line has the assignment title, the class and the due date. Work you alread
 ### Example answer for get_todo
 The question "What do I still need to turn in?" is answered by get_todo, which prints everything you have not handed in and puts the Classroom page of each one under the title:
 ```text
+0 due today, 2 overdue
 - Lab safety form (English) due Fri, Oct 9
   link: https://classroom.google.com/c/English/course/1/courseWork/w2
 - Chapter 3 questions (Biology) due Mon, Oct 19

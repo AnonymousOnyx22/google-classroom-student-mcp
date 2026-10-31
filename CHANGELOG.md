@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- get_todo now starts with one line such as "3 due today, 2 overdue", so the answer to "what is urgent?" comes before the full list. Today is the calendar day in your time zone, or CLASSROOM_TIMEZONE if you set it. The list under it is unchanged.
 - get_todo, get_upcoming_due_dates, get_missing_assignments, get_my_grades, get_target_grade, get_announcements and get_whats_new now take an optional offset, so students with more than 15 classes can reach the rest. The tools still read 15 classes at a time. Pass offset 15 for the next 15, and the "showing first 15" line now tells you which offset to use. Leaving offset out works as before.
 - New tool get_submission_status answers "Did my teacher get my work?". Give it the course ID and the assignment ID and it shows whether the work is turned in, when it was turned in, whether it was late, the grade if it was returned and the comment the teacher left. The turned in time depends on Classroom sharing the submission history.
 - New tool get_course_teachers answers "who teaches this class?" and "how do I email my teacher?". Give it the course ID and it lists the teachers of that class with their email addresses when Classroom shares them. Sign in again with the login command to give the server the new read only permissions for class rosters and email addresses.

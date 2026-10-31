@@ -144,6 +144,7 @@ Here is what the answers look like.
 The question "What do I still need to turn in?" goes to `get_todo`. It prints everything you have not handed in, and it puts the Classroom page of each one under the title so you can open the work itself.
 
 ```text
+0 due today, 2 overdue
 - Lab safety form (English) due Fri, Oct 9
   link: https://classroom.google.com/c/English/course/1/courseWork/w2
 - Chapter 3 questions (Biology) due Mon, Oct 19
@@ -156,7 +157,7 @@ The question "What do I still need to turn in?" goes to `get_todo`. It prints ev
   link: https://classroom.google.com/c/Calculus/course/3/courseWork/w5
 ```
 
-Work you already turned in is left out, and work with no due date goes last. Pass `course_ids` to check a few classes only. You can also pass `course_name`, for example `Biology`, to pick a class by part of its name without looking up its ID first.
+The first line counts what is due today and what is overdue. Work you already turned in is left out, and work with no due date goes last. Pass `course_ids` to check a few classes only. You can also pass `course_name`, for example `Biology`, to pick a class by part of its name without looking up its ID first.
 
 ### Sample answer for get_missing_assignments
 

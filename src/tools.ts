@@ -99,6 +99,20 @@ function dueText(i: { due: Date | null; dueHasTime: boolean }): string {
   return i.due.toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric", timeZone: dueZone() });
 }
 
+/** One line such as "3 due today, 2 overdue". Today is the calendar day in the due date time zone. */
+function dueSummary(items: { due: Date | null }[], now: Date): string {
+  const day = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: dueZone() });
+  const today = day(now);
+  let dueToday = 0;
+  let overdue = 0;
+  for (const i of items) {
+    if (!i.due) continue;
+    if (i.due.getTime() < now.getTime()) overdue++;
+    else if (day(i.due) === today) dueToday++;
+  }
+  return `${dueToday} due today, ${overdue} overdue`;
+}
+
 /** Parse a Classroom timestamp, or return undefined when there is none. */
 function stampOf(value: unknown): Date | undefined {
   if (!value) return undefined;
@@ -365,6 +379,7 @@ export const tools: ToolDef<Api>[] = [
       const items = all.filter((i) => OPEN.has(i.state));
       items.sort((a, b) => (a.due?.getTime() ?? 9e15) - (b.due?.getTime() ?? 9e15));
       let text = bullets(items.map((i) => linked(`${i.title} (${i.course}) due ${dueText(i)}`, i.link)), "Nothing left to turn in.");
+      if (items.length) text = `${dueSummary(items, new Date())}\n${text}`;
       text += capNote(totalCourses, offset);
       return text;
     },
