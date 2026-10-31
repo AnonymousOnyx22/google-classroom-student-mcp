@@ -193,6 +193,24 @@ describe("google-classroom-student-mcp", () => {
     expect(other).toContain("BEGIN:VCALENDAR");
   });
 
+  it("exports an empty calendar when no class has open work", async () => {
+    const { text: ics, isError } = await call(await connect(), "export_due_dates_calendar", { course_ids: ["300"] });
+    expect(isError).toBe(false);
+    expect(ics).toContain("BEGIN:VCALENDAR");
+    expect(ics).toContain("END:VCALENDAR");
+    expect(ics).not.toContain("BEGIN:VEVENT");
+  });
+
+  it("exports a date only due date as an all day event", async () => {
+    const { text: ics } = await call(await connect(), "export_due_dates_calendar", { course_ids: ["100"] });
+    const event = ics.split("BEGIN:VEVENT").find((e) => e.includes("SUMMARY:Project"))!;
+    expect(event).toMatch(/DTSTART;VALUE=DATE:\d{8}/);
+    expect(event).toMatch(/DTEND;VALUE=DATE:\d{8}/);
+    // a timed due date uses a UTC time instead
+    const timed = ics.split("BEGIN:VEVENT").find((e) => e.includes("SUMMARY:Lab report"))!;
+    expect(timed).toMatch(/DTSTART:\d{8}T\d{6}Z/);
+  });
+
   it("limits work to the given course ids", async () => {
     const c = await connect();
     const todo = (await call(c, "get_todo", { course_ids: ["200"] })).text;

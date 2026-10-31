@@ -112,6 +112,22 @@ describe("buildIcs", () => {
     expect(unfold(ics)).toContain(`SUMMARY:${title}`);
   });
 
+  it("folds a long description and a long title, and unfolds back to the same text", () => {
+    const title = "Final research paper on the history of the printing press and its effects on schools";
+    const description = "Read the chapter, then write your notes. ".repeat(6).trim();
+    const ics = buildIcs([{ title, course: "History", due: new Date("2026-10-30T17:00:00Z"), dueHasTime: true, description }], {
+      now: NOW,
+    });
+
+    for (const line of lines(ics)) {
+      expect(Buffer.byteLength(line, "utf8"), `line over 75 bytes: ${line}`).toBeLessThanOrEqual(75);
+    }
+    const event = eventLines(ics);
+    expect(event.filter((line) => line.startsWith(" ")).length).toBeGreaterThan(2);
+    expect(unfold(ics)).toContain(`SUMMARY:${title} (History)`);
+    expect(unfold(ics)).toContain(`DESCRIPTION:${description.replace(/,/g, "\\,")}`);
+  });
+
   it("gives each event its own UID and keeps the same UID on a later run", () => {
     const items = [
       { title: "Same title", due: new Date("2026-10-30T17:00:00Z"), dueHasTime: true },
