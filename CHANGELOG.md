@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- New tool get_submission_status answers "Did my teacher get my work?". Give it the course ID and the assignment ID and it shows whether the work is turned in, when it was turned in, whether it was late, the grade if it was returned and the comment the teacher left. The turned in time depends on Classroom sharing the submission history.
 - New tool get_course_teachers answers "who teaches this class?" and "how do I email my teacher?". Give it the course ID and it lists the teachers of that class with their email addresses when Classroom shares them. Sign in again with the login command to give the server the new read only permissions for class rosters and email addresses.
 - get_todo, export_due_dates_calendar, get_upcoming_due_dates, get_missing_assignments, get_my_grades, get_target_grade and get_whats_new now take an optional course_name, so you can say "my Biology class" without looking up the course ID first. It matches part of a class name or section, ignores case, and is added to course_ids if you pass both. If no active class matches, it says so and lists your classes. course_ids works as before.
 - get_course_materials can now read topic names, so materials really come back grouped by topic. Sign in again with the login command to give the server the new read only topics permission. Until then, or in a class with no topics, the list looks as it did before. Topics are sorted in number order, so Unit 2 comes before Unit 10.

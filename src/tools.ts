@@ -455,6 +455,38 @@ export const tools: ToolDef<Api>[] = [
     },
   },
   {
+    name: "get_submission_status",
+    title: "Submission status",
+    description: "Did my teacher get my work? For one assignment, shows whether it is turned in, when it was turned in, whether it was late, the grade if it was returned and the comment the teacher left. Pass the course ID and the assignment ID. Use this when the user asks 'Did my teacher get my work?' or 'Was my assignment marked late?'",
+    inputSchema: { course_id: courseId, course_work_id: z.union([z.string(), z.number()]).describe("The assignment ID. Use get_assignments to find it.") },
+    run: async ({ course_id, course_work_id }, api) => {
+      const id = String(course_work_id);
+      const [work, sub] = await Promise.all([
+        api.list<any>(`/v1/courses/${course_id}/courseWork`, "courseWork", { courseWorkStates: "PUBLISHED" }),
+        api.list<any>(`/v1/courses/${course_id}/courseWork/-/studentSubmissions`, "studentSubmissions", { userId: "me" }),
+      ]);
+      const item = work.find((w) => String(w.id) === id);
+      if (!item) throw new ApiError(`Assignment ${id} was not found in this course. Check the course and assignment ID.`, 404);
+      const s = sub.find((x) => String(x.courseWorkId) === id);
+      const state: string = s?.state ?? "NEW";
+      const lines = [`title: ${item.title}`, `status: ${statusOf({ state, late: s?.late, grade: s?.assignedGrade, maxPoints: item.maxPoints })}`];
+      const history: any[] = Array.isArray(s?.submissionHistory) ? s.submissionHistory : [];
+      const turnedIn = history
+        .filter((h) => h?.stateHistory?.state === "TURNED_IN")
+        .map((h) => stampOf(h.stateHistory.stateTimestamp))
+        .filter((d): d is Date => !!d)
+        .pop();
+      const handedIn = state === "TURNED_IN" || state === "RETURNED";
+      if (handedIn) lines.push(`turned in at: ${turnedIn ? turnedIn.toISOString() : "time not shared by Classroom"}`);
+      lines.push(`late: ${handedIn ? (s?.late ? "yes" : "no") : "not turned in"}`);
+      if (s?.assignedGrade != null) lines.push(`grade: ${s.assignedGrade}/${item.maxPoints ?? "?"}`);
+      const comment = commentText(s);
+      if (comment) lines.push(`teacher comment: ${comment}`);
+      if (s?.alternateLink) lines.push(`link: ${s.alternateLink}`);
+      return lines.join("\n");
+    },
+  },
+  {
     name: "get_my_grades",
     title: "My grades",
     description: "Grades on returned work for each class, with the comment the teacher left on the work. Google Classroom has no overall grade, so this adds up graded work only, and adds a weighted percent when the class uses grading categories with weights. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'How am I doing in my classes?' or 'What grades have I gotten back?'",

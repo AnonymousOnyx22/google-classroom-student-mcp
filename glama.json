@@ -33,6 +33,10 @@
       "description": "Everything about one assignment: what the teacher wrote in the description, the files and links attached to it, its due date, points and your status. Pass the course ID and the assignment ID. Use this when the user asks 'What does this assignment ask for?' or 'What do I need to turn in?' about one specific assignment."
     },
     {
+      "name": "get_submission_status",
+      "description": "Did my teacher get my work? For one assignment, shows whether it is turned in, when it was turned in, whether it was late, the grade if it was returned and the comment the teacher left. Pass the course ID and the assignment ID. Use this when the user asks 'Did my teacher get my work?' or 'Was my assignment marked late?'"
+    },
+    {
       "name": "get_my_grades",
       "description": "Grades on returned work for each class, with the comment the teacher left on the work. Google Classroom has no overall grade, so this adds up graded work only, and adds a weighted percent when the class uses grading categories with weights. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'How am I doing in my classes?' or 'What grades have I gotten back?'"
     },

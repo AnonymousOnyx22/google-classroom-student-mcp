@@ -70,7 +70,7 @@ beforeAll(async () => {
     if (p === "/v1/courses/100/courseWork/-/studentSubmissions")
       return send(200, { studentSubmissions: [
         { courseWorkId: "w1", state: "NEW" },
-        { courseWorkId: "w2", state: "TURNED_IN" },
+        { courseWorkId: "w2", state: "TURNED_IN", late: true, submissionHistory: [{ stateHistory: { state: "CREATED", stateTimestamp: "2026-10-01T10:00:00Z" } }, { stateHistory: { state: "TURNED_IN", stateTimestamp: "2026-10-02T15:30:00Z" } }] },
         { courseWorkId: "w3", state: "CREATED" },
         { courseWorkId: "w4", state: "RETURNED", assignedGrade: 4, assignedComment: { text: "<p>Nice work,<br>watch your signs.</p>", creationTime: new Date(Date.now() - 2 * day).toISOString() } },
         { courseWorkId: "w5", state: "NEW" },
@@ -140,7 +140,7 @@ async function call(client: Client, name: string, args: Record<string, unknown> 
 describe("google-classroom-student-mcp", () => {
   it("exposes only read-only tools", async () => {
     const { tools } = await (await connect()).listTools();
-    expect(tools.length).toBe(13);
+    expect(tools.length).toBe(14);
     for (const t of tools) expect(t.annotations?.readOnlyHint).toBe(true);
   });
 
@@ -244,6 +244,23 @@ describe("google-classroom-student-mcp", () => {
     expect(missing.isError).toBe(true);
     expect(missing.text).toContain("was not found");
     expect(missing.text).toContain("Check the course and assignment ID");
+  });
+
+  it("shows the submission status of one assignment", async () => {
+    const c = await connect();
+    const turned = (await call(c, "get_submission_status", { course_id: "100", course_work_id: "w2" })).text;
+    expect(turned).toContain("title: Quiz 2");
+    expect(turned).toContain("status: turned in late");
+    expect(turned).toContain("turned in at: 2026-10-02T15:30:00.000Z");
+    expect(turned).toContain("late: yes");
+    const graded = (await call(c, "get_submission_status", { course_id: "100", course_work_id: "w4" })).text;
+    expect(graded).toContain("grade: 4/5");
+    expect(graded).toContain("teacher comment: Nice work, watch your signs.");
+    const open = (await call(c, "get_submission_status", { course_id: "100", course_work_id: "w5" })).text;
+    expect(open).toContain("late: not turned in");
+    expect(open).not.toContain("turned in at");
+    const missing = await call(c, "get_submission_status", { course_id: "100", course_work_id: "nope" });
+    expect(missing.isError).toBe(true);
   });
 
   it("adds up graded work per class and says when there is none", async () => {

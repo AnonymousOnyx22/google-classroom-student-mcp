@@ -206,6 +206,7 @@ All tools are read only.
 | `get_missing_assignments` | Past due work you haven't turned in |
 | `get_assignments` | Assignments for a class with due dates and status |
 | `get_assignment_details` | Everything about one assignment: description, attachments, due date, points and status |
+| `get_submission_status` | Did your teacher get your work: turned in time, late flag, grade and the teacher's comment for one assignment |
 | `get_my_grades` | Points earned on returned work for each class, with the comment the teacher left |
 | `get_target_grade` | Points needed on the work left to reach a target percent |
 | `get_announcements` | Recent announcements |
