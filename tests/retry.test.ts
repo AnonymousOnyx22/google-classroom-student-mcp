@@ -68,3 +68,46 @@ describe("get_whats_new with a failing class", () => {
     expect((await digest(true)).isError).toBe(true);
   });
 });
+
+describe("get_whats_new with many classes", () => {
+  async function many(count: number, failing: string[] = []) {
+    const seen = new Set<string>();
+    const courses = Array.from({ length: count }, (_, i) => ({ id: String(i + 1), name: `Class ${i + 1}` }));
+    const f = (async (url: string) => {
+      const p = new URL(url).pathname;
+      if (p === "/v1/courses") return json(200, { courses });
+      const id = p.split("/")[3];
+      seen.add(id);
+      if (failing.includes(id)) return json(403, {});
+      return json(200, {});
+    }) as unknown as typeof fetch;
+    const server = createServer(createClassroomApi(async () => "t", "http://x", f, fast));
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    const client = new Client({ name: "test", version: "0" });
+    await Promise.all([server.connect(a), client.connect(b)]);
+    const res: any = await client.callTool({ name: "get_whats_new", arguments: {} });
+    return { text: res.content[0].text as string, isError: Boolean(res.isError), seen };
+  }
+
+  it("reads only the first 15 classes and says so", async () => {
+    const { text, seen } = await many(20);
+    expect(text).toContain("showing first 15 of 20 classes");
+    expect(seen.size).toBe(15);
+    expect(seen.has("16")).toBe(false);
+  });
+
+  it("does not print the cap line for exactly 15 classes", async () => {
+    const { text, seen } = await many(15);
+    expect(text).not.toContain("showing first");
+    expect(seen.size).toBe(15);
+  });
+
+  it("counts failures against the classes it tried, not the total", async () => {
+    const { text, isError } = await many(20, ["2", "3"]);
+    expect(isError).toBe(false);
+    expect(text).toContain("showing first 15 of 20 classes");
+    expect(text).toContain("Could not load 2 of 15 classes");
+    expect(text).toContain("Class 2");
+    expect(text).toContain("Class 3");
+  });
+});
