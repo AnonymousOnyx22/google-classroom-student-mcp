@@ -8,6 +8,7 @@ type Api = ClassroomApi;
 
 const courseId = z.union([z.string(), z.number()]).describe("Classroom course ID. Use get_my_courses to find it.");
 const courseIds = z.array(courseId).optional().describe("Classroom course IDs to check. Leave empty for all active classes.");
+const courseName = z.string().optional().describe("Part of a class name or section, for example Biology. It is matched without checking case and added to course_ids, so you can skip get_my_courses. Leave empty to use course_ids only.");
 const targetPercent = z.number().min(0).max(100).describe("The class percent you want, from 0 to 100. For example 90.");
 const daysAhead = z.number().int().positive().optional().describe("Only show work due within this many days from now. Leave empty for every future due date.");
 const sinceDays = z.number().int().positive().optional().describe("How many days back to look for new announcements and new grades. Leave empty for the last 7 days.");
@@ -159,15 +160,30 @@ interface CoursesResult {
   total: number;
 }
 
-async function coursesFor(api: Api, ids?: string[]): Promise<CoursesResult> {
-  const courses = await activeCourses(api);
-  if (!ids?.length) return { courses: courses.slice(0, 15), total: courses.length };
-  const byId = new Map(courses.map((c) => [String(c.id), c]));
-  return { courses: ids.slice(0, 15).map((id) => byId.get(String(id)) ?? { id: String(id), name: `class ${id}` }), total: ids.length };
+/** Active classes whose name or section contains the text, ignoring case. */
+function matchByName(courses: Course[], name: string): Course[] {
+  const needle = name.trim().toLowerCase();
+  return courses.filter((c) => `${c.name} ${c.section ?? ""}`.toLowerCase().includes(needle));
 }
 
-async function allWork(api: Api, ids?: string[]): Promise<{ items: WorkItem[]; totalCourses: number }> {
-  const { courses, total } = await coursesFor(api, ids);
+async function coursesFor(api: Api, ids?: string[], name?: string): Promise<CoursesResult> {
+  const courses = await activeCourses(api);
+  const wanted: string[] = (ids ?? []).map(String);
+  if (name?.trim()) {
+    const found = matchByName(courses, name);
+    if (!found.length) {
+      const known = courses.map((c) => c.name).join(", ") || "none";
+      throw new Error(`No active class matches "${name}". Your active classes: ${known}.`);
+    }
+    for (const c of found) if (!wanted.includes(String(c.id))) wanted.push(String(c.id));
+  }
+  if (!wanted.length) return { courses: courses.slice(0, 15), total: courses.length };
+  const byId = new Map(courses.map((c) => [String(c.id), c]));
+  return { courses: wanted.slice(0, 15).map((id) => byId.get(id) ?? { id, name: `class ${id}` }), total: wanted.length };
+}
+
+async function allWork(api: Api, ids?: string[], name?: string): Promise<{ items: WorkItem[]; totalCourses: number }> {
+  const { courses, total } = await coursesFor(api, ids, name);
   const items = (await Promise.all(courses.map((c) => courseWork(api, c)))).flat();
   return { items, totalCourses: total };
 }
@@ -330,9 +346,9 @@ export const tools: ToolDef<Api>[] = [
     name: "get_todo",
     title: "To-do list",
     description: "Everything assigned that the student has not turned in yet, each with a link to open it in Classroom. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'What do I still have to do?' or 'What's left to turn in across all my classes?'",
-    inputSchema: { course_ids: courseIds },
-    run: async ({ course_ids }, api) => {
-      const { items: all, totalCourses } = await allWork(api, course_ids);
+    inputSchema: { course_ids: courseIds, course_name: courseName },
+    run: async ({ course_ids, course_name }, api) => {
+      const { items: all, totalCourses } = await allWork(api, course_ids, course_name);
       const items = all.filter((i) => OPEN.has(i.state));
       items.sort((a, b) => (a.due?.getTime() ?? 9e15) - (b.due?.getTime() ?? 9e15));
       let text = bullets(items.map((i) => linked(`${i.title} (${i.course}) due ${dueText(i)}`, i.link)), "Nothing left to turn in.");
@@ -344,10 +360,10 @@ export const tools: ToolDef<Api>[] = [
     name: "export_due_dates_calendar",
     title: "Export due dates calendar",
     description: "Build an ICS calendar file of upcoming due dates so they can be imported into a calendar app. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'Can you give me my due dates as a calendar file?'",
-    inputSchema: { course_ids: courseIds },
-    run: async ({ course_ids }, api) => {
+    inputSchema: { course_ids: courseIds, course_name: courseName },
+    run: async ({ course_ids, course_name }, api) => {
       const now = Date.now();
-      const { items: all } = await allWork(api, course_ids);
+      const { items: all } = await allWork(api, course_ids, course_name);
       // only what get_upcoming_due_dates would list: work not turned in and still due, so old and finished work stays out of the calendar
       const upcoming = all.filter((i) => OPEN.has(i.state) && i.due && i.due.getTime() >= now);
       const ics = buildIcs(
@@ -367,11 +383,11 @@ export const tools: ToolDef<Api>[] = [
     name: "get_upcoming_due_dates",
     title: "Upcoming due dates",
     description: "Work that is due soon and not turned in, soonest first. Pass course_ids or days_ahead to narrow it, or leave both empty. Use this when the user asks 'What's due this week across all my classes?' or 'What's coming up?'",
-    inputSchema: { course_ids: courseIds, days_ahead: daysAhead },
-    run: async ({ course_ids, days_ahead }, api) => {
+    inputSchema: { course_ids: courseIds, course_name: courseName, days_ahead: daysAhead },
+    run: async ({ course_ids, course_name, days_ahead }, api) => {
       const now = Date.now();
       const until = days_ahead == null ? Infinity : now + days_ahead * 86400000;
-      const { items: all, totalCourses } = await allWork(api, course_ids);
+      const { items: all, totalCourses } = await allWork(api, course_ids, course_name);
       const items = all.filter(
         (i) => OPEN.has(i.state) && i.due && i.due.getTime() >= now && i.due.getTime() <= until,
       );
@@ -385,10 +401,10 @@ export const tools: ToolDef<Api>[] = [
     name: "get_missing_assignments",
     title: "Missing assignments",
     description: "Past due work that has not been turned in. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'What's overdue?' or 'What am I behind on?'",
-    inputSchema: { course_ids: courseIds },
-    run: async ({ course_ids }, api) => {
+    inputSchema: { course_ids: courseIds, course_name: courseName },
+    run: async ({ course_ids, course_name }, api) => {
       const now = Date.now();
-      const { items: all, totalCourses } = await allWork(api, course_ids);
+      const { items: all, totalCourses } = await allWork(api, course_ids, course_name);
       const items = all.filter((i) => OPEN.has(i.state) && i.due && i.due.getTime() < now);
       items.sort((a, b) => b.due!.getTime() - a.due!.getTime());
       let text = bullets(items.map((i) => `${i.title} (${i.course}) was due ${dueText(i)}`), "No missing assignments.");
@@ -442,9 +458,9 @@ export const tools: ToolDef<Api>[] = [
     name: "get_my_grades",
     title: "My grades",
     description: "Grades on returned work for each class, with the comment the teacher left on the work. Google Classroom has no overall grade, so this adds up graded work only, and adds a weighted percent when the class uses grading categories with weights. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'How am I doing in my classes?' or 'What grades have I gotten back?'",
-    inputSchema: { course_ids: courseIds },
-    run: async ({ course_ids }, api) => {
-      const { courses, total } = await coursesFor(api, course_ids);
+    inputSchema: { course_ids: courseIds, course_name: courseName },
+    run: async ({ course_ids, course_name }, api) => {
+      const { courses, total } = await coursesFor(api, course_ids, course_name);
       const perCourse = await Promise.all(courses.map((c) => courseWork(api, c)));
       const lines: string[] = [];
       for (const [idx, list] of perCourse.entries()) {
@@ -473,9 +489,9 @@ export const tools: ToolDef<Api>[] = [
     name: "get_target_grade",
     title: "Target grade",
     description: "Points needed on the work that is left to reach a target percent in each class. Adds up the points earned on graded work and the points the work left is worth, then says how many of those points you still need. target_percent is the percent you want, from 0 to 100. Pass course_ids to limit it, or leave empty for all active classes. Use this when the user asks 'What do I need to score to get a 90?' or 'Can I still get an A in this class?'",
-    inputSchema: { course_ids: courseIds, target_percent: targetPercent },
-    run: async ({ course_ids, target_percent }, api) => {
-      const { courses, total } = await coursesFor(api, course_ids);
+    inputSchema: { course_ids: courseIds, course_name: courseName, target_percent: targetPercent },
+    run: async ({ course_ids, course_name, target_percent }, api) => {
+      const { courses, total } = await coursesFor(api, course_ids, course_name);
       const perCourse = await Promise.all(courses.map((c) => courseWork(api, c)));
       const lines = perCourse.map((list, idx) => targetLine(courses[idx].name, list, target_percent));
       let text = bullets(lines, "No target grade to work out.");
@@ -559,15 +575,15 @@ export const tools: ToolDef<Api>[] = [
     name: "get_whats_new",
     title: "What's new",
     description: "One catch up digest for every class: new announcements, newly graded work with the comment the teacher left, overdue work and what is due next. Pass course_ids to limit it, since_days for how far back to look and days_ahead for how far ahead to look. Use this when the user asks 'What's new since yesterday?' or 'What changed in my classes?'",
-    inputSchema: { course_ids: courseIds, since_days: sinceDays, days_ahead: dueAhead },
-    run: async ({ course_ids, since_days, days_ahead }, api) => {
+    inputSchema: { course_ids: courseIds, course_name: courseName, since_days: sinceDays, days_ahead: dueAhead },
+    run: async ({ course_ids, course_name, since_days, days_ahead }, api) => {
       const back = since_days ?? 7;
       const ahead = days_ahead ?? 14;
       const now = Date.now();
       const from = now - back * 86400000;
       const to = now + ahead * 86400000;
 
-      const { courses, total } = await coursesFor(api, course_ids);
+      const { courses, total } = await coursesFor(api, course_ids, course_name);
       const failed: string[] = [];
       let firstError: unknown;
       const settled = await Promise.all(

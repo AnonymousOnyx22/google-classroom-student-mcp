@@ -156,7 +156,7 @@ The question "What do I still need to turn in?" goes to `get_todo`. It prints ev
   link: https://classroom.google.com/c/Calculus/course/3/courseWork/w5
 ```
 
-Work you already turned in is left out, and work with no due date goes last. Pass `course_ids` to check a few classes only.
+Work you already turned in is left out, and work with no due date goes last. Pass `course_ids` to check a few classes only. You can also pass `course_name`, for example `Biology`, to pick a class by part of its name without looking up its ID first.
 
 ### Sample answer for get_missing_assignments
 

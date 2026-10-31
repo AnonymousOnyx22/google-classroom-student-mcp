@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- get_todo, export_due_dates_calendar, get_upcoming_due_dates, get_missing_assignments, get_my_grades, get_target_grade and get_whats_new now take an optional course_name, so you can say "my Biology class" without looking up the course ID first. It matches part of a class name or section, ignores case, and is added to course_ids if you pass both. If no active class matches, it says so and lists your classes. course_ids works as before.
 - get_course_materials can now read topic names, so materials really come back grouped by topic. Sign in again with the login command to give the server the new read only topics permission. Until then, or in a class with no topics, the list looks as it did before. Topics are sorted in number order, so Unit 2 comes before Unit 10.
 
 ## 0.1.9
