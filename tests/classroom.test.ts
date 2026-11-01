@@ -402,6 +402,47 @@ describe("google-classroom-student-mcp", () => {
     expect(low).toContain("already there, so the 25 points of work left can only help");
   });
 
+  it("handles targets that land exactly on the limits without a negative or over 100 percent", async () => {
+    // course id -> points earned on the graded 10 point item
+    const earnedBy: Record<string, number> = { "1": 5, "2": 8, "3": 0 };
+    const api: any = {
+      get: async () => ({}),
+      list: async (path: string) => {
+        if (path === "/v1/courses") return [1, 2, 3].map((n) => ({ id: String(n), name: `Class${n}` }));
+        const id = path.split("/")[3];
+        if (path.endsWith("/studentSubmissions"))
+          return [{ courseWorkId: "done", state: "RETURNED", assignedGrade: earnedBy[id] }];
+        return [
+          { id: "done", title: "Done", maxPoints: 10 },
+          { id: "todo", title: "To do", maxPoints: 10 },
+        ];
+      },
+    };
+    const tool = tools.find((t) => t.name === "get_target_grade")!;
+    const run = (ids: string[], target: number) => tool.run({ course_ids: ids, target_percent: target }, api) as Promise<string>;
+
+    // needs every remaining point: reachable, shown as 100% on the work left
+    const exact = await run(["1"], 75);
+    expect(exact).toContain("10 points needed on the 10 points of work left, which is 100.0% on that work.");
+    expect(exact).not.toContain("more than that work is worth");
+
+    // needs exactly zero more points: already met, never a negative requirement
+    const met = await run(["2"], 40);
+    expect(met).toContain("already there");
+    expect(met).not.toMatch(/-\d/);
+    expect(met).not.toContain("points needed");
+
+    // out of reach: says so and gives the best possible percent, not a required score over 100%
+    const out = await run(["3"], 100);
+    expect(out).toContain("20 points needed on the 10 points of work left, which is more than that work is worth.");
+    expect(out).toContain("The best you can reach is 50.0%.");
+    expect(out).not.toContain("200.0%");
+
+    // a target of 0 is met for every class
+    const zero = await run(["1", "2", "3"], 0);
+    expect(zero.match(/already there/g)).toHaveLength(3);
+  });
+
   it("says the percent stays when no work is left and leaves returned work out", async () => {
     const api: any = {
       get: async () => ({}),
