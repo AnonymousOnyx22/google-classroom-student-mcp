@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- get_course_teachers now takes optional course_ids and course_name, so you can ask for the teachers of several classes at once, or of "my Biology class", without one call per course ID. Each class gets its own list. With none of course_id, course_ids and course_name it covers all active classes. course_id alone works as before.
 - get_assignments and get_course_materials now take an optional course_name, so you can say "my Biology class" without looking up the course ID first. It matches part of a class name or section and ignores case. If more than one class matches, it lists them so you can use a longer name or the course ID. course_id works as before and wins if you pass both.
 
 ## 0.1.10

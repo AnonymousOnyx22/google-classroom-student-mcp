@@ -654,18 +654,27 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_course_teachers",
     title: "Class teachers",
-    description: "Teachers of one class with their email addresses when Classroom shares them. Pass the course ID. Use this when the user asks 'Who teaches this class?' or 'How do I email my teacher?'",
-    inputSchema: { course_id: courseId },
-    run: async ({ course_id }, api) => {
-      const teachers = await api.list<any>(`/v1/courses/${course_id}/teachers`, "teachers");
-      return bullets(
-        teachers.map((t) => {
-          const name = t?.profile?.name?.fullName || "Unnamed teacher";
-          const email = t?.profile?.emailAddress;
-          return email ? `${name}, ${email}` : name;
-        }),
-        "No teachers found.",
-      );
+    description: "Teachers of your classes with their email addresses when Classroom shares them. Pass course_id for one class, or course_ids or course_name for several, and each class gets its own list. With none of them it covers all active classes. Use this when the user asks 'Who teaches this class?' or 'How do I email my teacher?'",
+    inputSchema: { course_id: optionalCourseId, course_ids: courseIds, course_name: courseName, offset: classOffset },
+    run: async ({ course_id, course_ids, course_name, offset = 0 }, api) => {
+      const teachersOf = async (id: string | number) => {
+        const teachers = await api.list<any>(`/v1/courses/${id}/teachers`, "teachers");
+        return bullets(
+          teachers.map((t) => {
+            const name = t?.profile?.name?.fullName || "Unnamed teacher";
+            const email = t?.profile?.emailAddress;
+            return email ? `${name}, ${email}` : name;
+          }),
+          "No teachers found.",
+        );
+      };
+      const hasId = course_id != null && String(course_id) !== "";
+      if (hasId && !course_ids?.length && !course_name?.trim()) return teachersOf(course_id);
+      const ids = (course_ids ?? []).map(String);
+      if (hasId && !ids.includes(String(course_id))) ids.push(String(course_id));
+      const { courses, total } = await coursesFor(api, ids, course_name, offset);
+      const lists = await Promise.all(courses.map(async (c) => `${c.name}:\n${await teachersOf(c.id)}`));
+      return (lists.join("\n\n") || "No classes found.") + capNote(total, offset);
     },
   },
   {

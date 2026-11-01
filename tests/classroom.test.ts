@@ -496,6 +496,17 @@ describe("google-classroom-student-mcp", () => {
     expect((await call(c, "get_course_teachers", { course_id: "200" })).text).toBe("No teachers found.");
   });
 
+  it("lists teachers for several classes with course_ids and course_name", async () => {
+    const c = await connect();
+    const many = (await call(c, "get_course_teachers", { course_ids: ["100", "200"] })).text;
+    expect(many).toContain(":\n- Ms Rivera, rivera@school.test\n- Mr Chen");
+    expect(many).toContain(":\nNo teachers found.");
+    const named = (await call(c, "get_course_teachers", { course_name: "math" })).text;
+    expect(named).toContain("Ms Rivera");
+    const none = await call(c, "get_course_teachers", { course_name: "Chemistry" });
+    expect(none.text).toContain("No active class matches");
+  });
+
   it("keeps the plain list when the class has no topics or they cannot be read", async () => {
     const { text } = await call(await connect(), "get_course_materials", { course_id: "100" });
     expect(text.startsWith("- Slides week 3")).toBe(true);

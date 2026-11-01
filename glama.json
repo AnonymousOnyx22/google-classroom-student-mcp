@@ -54,7 +54,7 @@
     },
     {
       "name": "get_course_teachers",
-      "description": "Teachers of one class with their email addresses when Classroom shares them. Pass the course ID. Use this when the user asks 'Who teaches this class?' or 'How do I email my teacher?'"
+      "description": "Teachers of your classes with their email addresses when Classroom shares them. Pass course_id for one class, or course_ids or course_name for several, and each class gets its own list. With none of them it covers all active classes. Use this when the user asks 'Who teaches this class?' or 'How do I email my teacher?'"
     },
     {
       "name": "get_whats_new",
