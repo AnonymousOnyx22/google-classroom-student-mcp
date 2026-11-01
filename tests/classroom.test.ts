@@ -269,6 +269,13 @@ describe("google-classroom-student-mcp", () => {
     expect(text).toMatch(/Reading.*graded 4\/5/);
   });
 
+  it("shows the due date and points on each assignment line", async () => {
+    const { text } = await call(await connect(), "get_assignments", { course_id: "100" });
+    expect(text).toMatch(/Quiz 2 due .*\(20 pts\)/);
+    expect(text).toMatch(/Project due .*\(50 pts\)/);
+    expect(text).toMatch(/Reading.*\(5 pts\)/);
+  });
+
   it("prints the description, attachments and status of one assignment", async () => {
     const c = await connect();
     const { text } = await call(c, "get_assignment_details", { course_id: "100", course_work_id: "w5" });
