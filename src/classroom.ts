@@ -7,6 +7,19 @@ export interface ClassroomApi {
   list<T = any>(path: string, key: string, query?: Record<string, string | undefined>, maxPages?: number): Promise<T[]>;
 }
 
+export interface Topic {
+  id: string;
+  name: string;
+}
+
+/** Topics of one class from courses.topics.list, in the order the API returns them. */
+export async function listTopics(api: ClassroomApi, courseId: string): Promise<Topic[]> {
+  const items = await api.list<any>(`/v1/courses/${encodeURIComponent(courseId)}/topics`, "topic");
+  const out: Topic[] = [];
+  for (const t of items) if (t?.topicId && t?.name) out.push({ id: String(t.topicId), name: String(t.name) });
+  return out;
+}
+
 export function createClassroomApi(
   token: TokenProvider,
   baseUrl = "https://classroom.googleapis.com",

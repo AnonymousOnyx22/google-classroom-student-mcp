@@ -3,7 +3,7 @@ import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { createClassroomApi } from "../src/classroom.js";
+import { createClassroomApi, listTopics } from "../src/classroom.js";
 import { createTokenProvider, buildAuthUrl, exchangeCode, SCOPES } from "../src/auth.js";
 import { createServer } from "../src/server.js";
 import { tools } from "../src/tools.js";
@@ -138,6 +138,22 @@ async function call(client: Client, name: string, args: Record<string, unknown> 
 }
 
 describe("google-classroom-student-mcp", () => {
+  it("listTopics maps courses.topics.list items and skips incomplete ones", async () => {
+    const calls: Array<[string, string]> = [];
+    const api = {
+      get: async () => ({}),
+      list: async (path: string, key: string) => {
+        calls.push([path, key]);
+        return [{ topicId: "t1", name: "Unit 1" }, { topicId: "t2" }, { name: "No id" }, { topicId: "t3", name: "Unit 3" }];
+      },
+    };
+    expect(await listTopics(api as any, "400")).toEqual([
+      { id: "t1", name: "Unit 1" },
+      { id: "t3", name: "Unit 3" },
+    ]);
+    expect(calls).toEqual([["/v1/courses/400/topics", "topic"]]);
+  });
+
   it("exposes only read-only tools", async () => {
     const { tools } = await (await connect()).listTools();
     expect(tools.length).toBe(14);
