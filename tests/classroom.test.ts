@@ -445,6 +445,42 @@ describe("google-classroom-student-mcp", () => {
     expect(plain).toContain("does not weight work by category");
   });
 
+  it("scales weights over the graded categories and skips an ungraded one", async () => {
+    const make = (categories: unknown[], work: unknown[]): any => ({
+      get: async () => ({ gradebookSettings: { calculationType: "WEIGHTED_CATEGORIES", gradeCategories: categories } }),
+      list: async (path: string) => {
+        if (path === "/v1/courses") return [{ id: "1", name: "Math" }];
+        if (path.endsWith("/studentSubmissions"))
+          return [
+            { courseWorkId: "w1", state: "RETURNED", assignedGrade: 9 },
+            { courseWorkId: "w2", state: "RETURNED", assignedGrade: 50 },
+          ];
+        return work;
+      },
+    });
+    const work = [
+      { id: "w1", title: "Homework 1", maxPoints: 10, gradeCategory: { id: "hw" } },
+      { id: "w2", title: "Exam 1", maxPoints: 100, gradeCategory: { id: "ex" } },
+    ];
+    const tool = tools.find((t) => t.name === "get_my_grades")!;
+    const out = await tool.run(
+      {},
+      make(
+        [
+          { id: "hw", name: "Homework", weight: 30000 },
+          { id: "ex", name: "Exams", weight: 50000 },
+          { id: "pr", name: "Projects", weight: 20000 },
+        ],
+        work,
+      ),
+    );
+    expect(out).toContain("weighted by category: 65.0% (Homework 37.5% weight: 90.0%, Exams 62.5% weight: 50.0%)");
+    expect(out).not.toContain("Projects");
+    const none = await tool.run({}, make([{ id: "pr", name: "Projects", weight: 100000 }], work));
+    expect(none).toContain("none of the graded work is in a weighted category");
+    expect(none).not.toContain("weighted by category:");
+  });
+
   it("leaves the comment line out when the teacher wrote nothing", async () => {
     const api: any = {
       get: async () => ({}),
