@@ -326,6 +326,58 @@ describe("google-classroom-student-mcp", () => {
     expect(missing.isError).toBe(true);
   });
 
+  it("formats on time, late, returned and not turned in states for get_submission_status", async () => {
+    const subs = [
+      { courseWorkId: "a", state: "TURNED_IN", submissionHistory: [{ stateHistory: { state: "TURNED_IN", stateTimestamp: "2026-10-05T09:00:00Z" } }], alternateLink: "https://classroom.google.com/c/X/a/sub" },
+      { courseWorkId: "b", state: "TURNED_IN", late: true },
+      { courseWorkId: "c", state: "RETURNED", late: true, assignedGrade: 7, assignedComment: { text: "Late but good.", creationTime: "2026-10-10T10:00:00Z" } },
+      { courseWorkId: "d", state: "RETURNED" },
+      { courseWorkId: "e", state: "RECLAIMED_BY_STUDENT" },
+    ];
+    const api: any = {
+      get: async () => ({}),
+      list: async (path: string) =>
+        path.endsWith("/studentSubmissions")
+          ? subs
+          : ["a", "b", "c", "d", "e", "f"].map((id) => ({ id, title: `Work ${id}`, maxPoints: 10 })),
+    };
+    const tool = tools.find((t) => t.name === "get_submission_status")!;
+    const run = (id: string) => tool.run({ course_id: "1", course_work_id: id }, api) as Promise<string>;
+
+    const onTime = await run("a");
+    expect(onTime).toContain("status: turned in");
+    expect(onTime).not.toContain("turned in late");
+    expect(onTime).toContain("turned in at: 2026-10-05T09:00:00.000Z");
+    expect(onTime).toContain("late: no");
+    expect(onTime).toContain("link: https://classroom.google.com/c/X/a/sub");
+
+    const noHistory = await run("b");
+    expect(noHistory).toContain("status: turned in late");
+    expect(noHistory).toContain("turned in at: time not shared by Classroom");
+    expect(noHistory).toContain("late: yes");
+
+    const lateReturned = await run("c");
+    expect(lateReturned).toContain("status: graded 7/10");
+    expect(lateReturned).toContain("late: yes");
+    expect(lateReturned).toContain("grade: 7/10");
+    expect(lateReturned).toContain("teacher comment: Late but good.");
+
+    const ungraded = await run("d");
+    expect(ungraded).toContain("status: returned");
+    expect(ungraded).toContain("late: no");
+    expect(ungraded).not.toContain("grade:");
+    expect(ungraded).not.toContain("teacher comment");
+
+    const reclaimed = await run("e");
+    expect(reclaimed).toContain("status: not turned in");
+    expect(reclaimed).toContain("late: not turned in");
+    expect(reclaimed).not.toContain("turned in at");
+
+    const noSubmission = await run("f");
+    expect(noSubmission).toContain("status: not turned in");
+    expect(noSubmission).toContain("late: not turned in");
+  });
+
   it("adds up graded work per class and says when there is none", async () => {
     const { text } = await call(await connect(), "get_my_grades");
     expect(text).toContain("Math 4/5 points on 1 graded items (80.0%)");
