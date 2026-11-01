@@ -8,7 +8,13 @@
 
 Ask your AI what's actually left to do in Google Classroom.
 
-This is the Google Classroom MCP server: a free, open source [MCP](https://modelcontextprotocol.io) server that lets Claude, ChatGPT, Cursor and other AI apps read your Classroom classes, assignments, due dates, missing work, grades on returned work with the comments your teachers leave on them, the points you need to reach a target grade, announcements, course materials and a catch up digest. It is **read only**. It can never turn in, edit or delete anything. Not affiliated with Google.
+```bash
+npx google-classroom-student-mcp setup
+```
+
+That one command prints the config for your AI app. Details are in [Quick start with npx](#quick-start-with-npx).
+
+This is the Google Classroom MCP server: a free, open source [MCP](https://modelcontextprotocol.io) server that lets Claude Desktop, Claude Code, Cursor and other MCP apps read your Classroom classes, assignments, due dates, missing work, grades on returned work with the comments your teachers leave on them, the points you need to reach a target grade, announcements, course materials and a catch up digest. It is **read only**. It can never turn in, edit or delete anything. Not affiliated with Google.
 
 Free forever. No sign up and no subscription. Your login details only ever go to Google.
 
