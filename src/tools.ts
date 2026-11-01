@@ -9,6 +9,8 @@ type Api = ClassroomApi;
 const courseId = z.union([z.string(), z.number()]).describe("Classroom course ID. Use get_my_courses to find it.");
 const courseIds = z.array(courseId).optional().describe("Classroom course IDs to check. Leave empty for all active classes.");
 const courseName = z.string().optional().describe("Part of a class name or section, for example Biology. It is matched without checking case and added to course_ids, so you can skip get_my_courses. Leave empty to use course_ids only.");
+const optionalCourseId = z.union([z.string(), z.number()]).optional().describe("Classroom course ID. Pass this or course_name.");
+const oneCourseName = z.string().optional().describe("Part of a class name or section, for example Biology, matched without checking case. Pass this or course_id, so you can skip get_my_courses. It must match exactly one active class.");
 const targetPercent = z.number().min(0).max(100).describe("The class percent you want, from 0 to 100. For example 90.");
 const daysAhead = z.number().int().positive().optional().describe("Only show work due within this many days from now. Leave empty for every future due date.");
 const classOffset = z.number().int().min(0).optional().describe("How many classes to skip. Up to 15 classes are read at a time, so pass 15 to see the next 15. Leave empty to start at the first class.");
@@ -207,6 +209,23 @@ async function coursesFor(api: Api, ids?: string[], name?: string, offset = 0): 
   if (!wanted.length) return { courses: courses.slice(offset, offset + PAGE), total: courses.length };
   const byId = new Map(courses.map((c) => [String(c.id), c]));
   return { courses: wanted.slice(offset, offset + PAGE).map((id) => byId.get(id) ?? { id, name: `class ${id}` }), total: wanted.length };
+}
+
+/** The one class a tool should read, from a course ID or from part of its name. */
+async function oneCourse(api: Api, id?: string | number, name?: string): Promise<Course> {
+  const courses = await activeCourses(api);
+  if (id != null && String(id) !== "") {
+    return courses.find((c) => String(c.id) === String(id)) ?? { id: String(id), name: `class ${id}` };
+  }
+  if (!name?.trim()) throw new Error("Pass course_id or course_name. Use get_my_courses to see your classes.");
+  const found = matchByName(courses, name);
+  if (!found.length) {
+    throw new Error(`No active class matches "${name}". Your active classes: ${courses.map((c) => c.name).join(", ") || "none"}.`);
+  }
+  if (found.length > 1) {
+    throw new Error(`More than one class matches "${name}": ${found.map((c) => `${c.name} [id ${c.id}]`).join(", ")}. Use a longer name or pass course_id.`);
+  }
+  return found[0];
 }
 
 async function allWork(api: Api, ids?: string[], name?: string, offset = 0): Promise<{ items: WorkItem[]; totalCourses: number }> {
@@ -443,10 +462,10 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_assignments",
     title: "Class assignments",
-    description: "Assignments for one class with due dates and status, each with a link to open it in Classroom. Use this when the user asks 'What's due in this class?' or wants every assignment and its points for a single class.",
-    inputSchema: { course_id: courseId },
-    run: async ({ course_id }, api) => {
-      const course = (await activeCourses(api)).find((c) => String(c.id) === String(course_id)) ?? { id: String(course_id), name: `class ${course_id}` };
+    description: "Assignments for one class, picked by course_id or course_name, with due dates and status, each with a link to open it in Classroom. Use this when the user asks 'What's due in this class?' or wants every assignment and its points for a single class.",
+    inputSchema: { course_id: optionalCourseId, course_name: oneCourseName },
+    run: async ({ course_id, course_name }, api) => {
+      const course = await oneCourse(api, course_id, course_name);
       const items = await courseWork(api, course);
       items.sort((a, b) => (a.due?.getTime() ?? 9e15) - (b.due?.getTime() ?? 9e15));
       return bullets(
@@ -598,9 +617,10 @@ export const tools: ToolDef<Api>[] = [
   {
     name: "get_course_materials",
     title: "Class materials",
-    description: "Posted materials for one class, grouped by topic with the Drive link of every attached file. Use this when the user asks 'What materials did my teacher post?' or 'What did we cover in unit 3?' or wants the readings, slides and handouts for one class.",
-    inputSchema: { course_id: courseId },
-    run: async ({ course_id }, api) => {
+    description: "Posted materials for one class, picked by course_id or course_name, grouped by topic with the Drive link of every attached file. Use this when the user asks 'What materials did my teacher post?' or 'What did we cover in unit 3?' or wants the readings, slides and handouts for one class.",
+    inputSchema: { course_id: optionalCourseId, course_name: oneCourseName },
+    run: async ({ course_id: givenId, course_name }, api) => {
+      const course_id = (await oneCourse(api, givenId, course_name)).id;
       const [items, topics] = await Promise.all([
         api.list<any>(`/v1/courses/${course_id}/courseWorkMaterials`, "courseWorkMaterial", { courseWorkMaterialStates: "PUBLISHED" }),
         api.list<any>(`/v1/courses/${course_id}/topics`, "topic").catch(() => []),

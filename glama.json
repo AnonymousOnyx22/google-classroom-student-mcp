@@ -26,7 +26,7 @@
     },
     {
       "name": "get_assignments",
-      "description": "Assignments for one class with due dates and status, each with a link to open it in Classroom. Use this when the user asks 'What's due in this class?' or wants every assignment and its points for a single class."
+      "description": "Assignments for one class, picked by course_id or course_name, with due dates and status, each with a link to open it in Classroom. Use this when the user asks 'What's due in this class?' or wants every assignment and its points for a single class."
     },
     {
       "name": "get_assignment_details",
@@ -50,7 +50,7 @@
     },
     {
       "name": "get_course_materials",
-      "description": "Posted materials for one class, grouped by topic with the Drive link of every attached file. Use this when the user asks 'What materials did my teacher post?' or 'What did we cover in unit 3?' or wants the readings, slides and handouts for one class."
+      "description": "Posted materials for one class, picked by course_id or course_name, grouped by topic with the Drive link of every attached file. Use this when the user asks 'What materials did my teacher post?' or 'What did we cover in unit 3?' or wants the readings, slides and handouts for one class."
     },
     {
       "name": "get_course_teachers",

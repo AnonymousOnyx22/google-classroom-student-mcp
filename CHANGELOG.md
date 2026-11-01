@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- get_assignments and get_course_materials now take an optional course_name, so you can say "my Biology class" without looking up the course ID first. It matches part of a class name or section and ignores case. If more than one class matches, it lists them so you can use a longer name or the course ID. course_id works as before and wins if you pass both.
+
 ## 0.1.10
 
 - get_todo now starts with one line such as "3 due today, 2 overdue", so the answer to "what is urgent?" comes before the full list. Today is the calendar day in your time zone, or CLASSROOM_TIMEZONE if you set it. The list under it is unchanged.

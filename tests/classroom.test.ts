@@ -239,6 +239,20 @@ describe("google-classroom-student-mcp", () => {
     expect(none.text).toContain("No active class matches");
   });
 
+  it("picks one class by course_name for get_assignments and get_course_materials", async () => {
+    const c = await connect();
+    const work = (await call(c, "get_assignments", { course_name: "engl" })).text;
+    expect(work).toContain("Outline");
+    expect(work).not.toContain("Worksheet 1");
+    expect((await call(c, "get_course_materials", { course_name: "math" })).text).toContain("Slides week 3");
+    const none = await call(c, "get_assignments", { course_name: "Chemistry" });
+    expect(none.isError).toBe(true);
+    expect(none.text).toContain("No active class matches");
+    const neither = await call(c, "get_course_materials", {});
+    expect(neither.isError).toBe(true);
+    expect(neither.text).toContain("course_id or course_name");
+  });
+
   it("caps how far ahead it looks with days_ahead", async () => {
     const c = await connect();
     const wide = (await call(c, "get_upcoming_due_dates", { days_ahead: 10 })).text;
